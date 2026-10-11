@@ -1,6 +1,9 @@
 # Caderno integrado
 
 O botão **Caderno completo** abre todas as funções do caderno dentro dos Flashcards.
+Depois do início da sessão, o caderno é preparado em segundo plano e permanece
+carregado entre aberturas. Os estilos são locais (`caderno-base.css`); as bibliotecas
+de exportação PDF e recorte de imagens são baixadas apenas ao usar essas funções.
 **Anotar no Caderno (C)** abre o caderno e inclui o card atual na pasta correspondente.
 Cards criados ou editados no caderno aparecem automaticamente no estudo principal,
 com vínculos estáveis para evitar duplicação e preservar o progresso de resposta.
@@ -31,3 +34,11 @@ python -m pytest -q tests/test_caderno_integrado.py
 Os testes usam Supabase simulado e verificam abertura interna, preservação da
 cópia da nuvem, ausência de duplicação, persistência das anotações, envio da cópia
 editada à nuvem simulada e retorno ao card original em computador e celular.
+
+Os estilos utilitários foram gerados com Tailwind CSS 3.4.17. Para regenerá-los
+após adicionar novas classes ao HTML, use um arquivo de entrada com
+`@tailwind base; @tailwind components; @tailwind utilities;` e execute:
+
+```sh
+npx --yes tailwindcss@3.4.17 -i /caminho/entrada.css -o caderno-base.css --content caderno.html --minify
+```

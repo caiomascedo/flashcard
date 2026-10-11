@@ -51,10 +51,19 @@ def test_notebook_in_flashcards(server,width):
   page.route('https://cdn.tailwindcss.com/**',lambda route:route.fulfill(body='',content_type='application/javascript'))
   page.route('https://cdnjs.cloudflare.com/**',lambda route:route.fulfill(body='',content_type='application/javascript'))
   page.route('https://i.postimg.cc/**',lambda route:route.abort())
+  # Cloud hydration must precede an imported card, preserving older notes.
+  page.add_init_script('''window.__notebook={dados:{concursos:[{id:9,nome:'Anterior',materias:[{id:91,nome:'Matéria',assuntos:[{id:911,nome:'Assunto',paginas:[{id:9111,titulo:'Notas',cadernoHTML:'<p>Nota anterior da nuvem</p>'}]}]}]}],flashcards:[]},cronograma:[],updated_at:'2026-10-11T00:00:00Z'}''')
+  notebook_requests=[]
+  heavy_requests=[]
+  page.on('request',lambda request:notebook_requests.append(request.url) if '/caderno.html?' in request.url else None)
+  page.on('request',lambda request:heavy_requests.append(request.url) if 'html2pdf' in request.url or 'cropperjs' in request.url or 'cdn.tailwindcss' in request.url else None)
   page.goto(server)
   page.wait_for_function('typeof getCardAtual === "function" && !!getCardAtual()')
-  # Cloud hydration must precede an imported card, preserving older notes.
-  page.evaluate('''window.__notebook={dados:{concursos:[{id:9,nome:'Anterior',materias:[{id:91,nome:'Matéria',assuntos:[{id:911,nome:'Assunto',paginas:[{id:9111,titulo:'Notas',cadernoHTML:'<p>Nota anterior da nuvem</p>'}]}]}]}],flashcards:[]},cronograma:[],updated_at:'2026-10-11T00:00:00Z'}''')
+  # It must be ready before the first click, without fetching export/crop libraries.
+  page.wait_for_function("document.getElementById('cadernoIntegradoFrame').src.includes('caderno.html') && !document.getElementById('cadernoIntegradoFrame').hidden")
+  assert not page.locator('#cadernoIntegradoDialog').evaluate('(dialog)=>dialog.open')
+  assert len(notebook_requests)==1
+  assert not heavy_requests
   page.get_by_role('button',name='📓 Anotar no Caderno (C)',exact=True).click()
   frame=page.frame_locator('#cadernoIntegradoFrame')
   frame.locator('.flashcard-importado').wait_for()
@@ -117,5 +126,52 @@ def test_notebook_in_flashcards(server,width):
   page.get_by_role('button',name='📓 Anotar no Caderno (C)',exact=True).click()
   page.wait_for_timeout(250)
   assert iframe.evaluate('CadernoIntegrado.cards().length') == notebook_count
+  assert len(notebook_requests)==1, notebook_requests
+  assert not heavy_requests, heavy_requests
+  assert not errors, errors
+  browser.close()
+
+
+def test_optional_tools_load_only_when_used(server):
+ with sync_playwright() as pw:
+  browser=pw.chromium.launch()
+  page=browser.new_page()
+  errors=[]
+  page.on('pageerror',lambda error:errors.append(str(error)))
+  page.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@*/dist/umd/supabase.min.js',lambda route:route.fulfill(body=MOCK,content_type='application/javascript'))
+  page.route('https://i.postimg.cc/**',lambda route:route.abort())
+  pdf_requests=[]
+  crop_requests=[]
+  def pdf(route):
+   pdf_requests.append(route.request.url)
+   route.fulfill(content_type='application/javascript',body="window.html2pdf=()=>({set(){return this},from(){return this},async save(){window.__pdfExports=(window.__pdfExports||0)+1}})")
+  def crop(route):
+   crop_requests.append(route.request.url)
+   route.fulfill(content_type='application/javascript',body="window.Cropper=class{constructor(){window.__cropperCreates=(window.__cropperCreates||0)+1}destroy(){}}")
+  page.route('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/**',pdf)
+  page.route('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/**/cropper.min.js',crop)
+  page.route('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/**/cropper.min.css',lambda route:route.fulfill(content_type='text/css',body=''))
+  page.goto(server)
+  page.wait_for_function("!document.getElementById('cadernoIntegradoFrame').hidden")
+  assert not pdf_requests and not crop_requests
+  page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
+  frame=page.frame_locator('#cadernoIntegradoFrame')
+  iframe=page.locator('#cadernoIntegradoFrame').element_handle().content_frame()
+  frame.locator('#btnGerarPDF').click()
+  iframe.wait_for_function('window.__pdfExports===1')
+  frame.locator('#btnGerarPDF').click()
+  iframe.wait_for_function('window.__pdfExports===2')
+  assert len(pdf_requests)==1
+  assert not crop_requests
+  iframe.evaluate("""() => {
+   const image=document.createElement('img');
+   image.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jGzQAAAAASUVORK5CYII=';
+   document.getElementById('editor').appendChild(image);
+   image.click();
+  }""")
+  frame.locator('#imgRecortar').click()
+  iframe.wait_for_function('window.__cropperCreates===1')
+  frame.locator('#cropCancel').click()
+  assert len(crop_requests)==1
   assert not errors, errors
   browser.close()

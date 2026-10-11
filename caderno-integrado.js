@@ -91,7 +91,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=2', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=3', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -114,6 +114,14 @@
         if (!carregando) carregar();
         else enviarPendentes();
     };
+    function prepararCaderno() {
+        if (!window.FlashcardCaderno?.pronto || carregando) return;
+        const preparar = () => { if (!carregando) carregar(); };
+        if ('requestIdleCallback' in window) window.requestIdleCallback(preparar, { timeout: 1500 });
+        else setTimeout(preparar, 150);
+    }
+    window.addEventListener('flashcard:pronto', prepararCaderno, { once: true });
+    prepararCaderno();
     function salvar() {
         if (pronto) {
             frame.contentWindow.CadernoIntegrado.salvar();

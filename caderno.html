@@ -9,10 +9,7 @@
     <title>Caderno de Erros · Completo + Nuvem</title>
     <link rel="apple-touch-icon" href="https://i.postimg.cc/Pptkggqw/icone.png">
     <link rel="icon" type="image/png" href="https://i.postimg.cc/Pptkggqw/icone.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="caderno-base.css?v=1">
     
     <style>
         * { -webkit-tap-highlight-color: transparent; }
@@ -502,6 +499,30 @@ function avisarPronto() {
 }
 if (integrado) document.body.inert = true;
 
+// Download optional editing/export tools only when the user requests them.
+const ferramentas = new Map();
+function carregarFerramenta(nome) {
+    const global = nome === 'pdf' ? 'html2pdf' : 'Cropper';
+    if (window[global]) return Promise.resolve();
+    if (ferramentas.has(nome)) return ferramentas.get(nome);
+    const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = nome === 'pdf'
+            ? 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+            : 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js';
+        script.onload = () => window[global] ? resolve() : reject(Error('Ferramenta indisponível. Tente novamente.'));
+        script.onerror = () => reject(Error('Não foi possível carregar a ferramenta. Confira sua conexão.'));
+        document.head.appendChild(script);
+        if (nome === 'cropper' && !document.getElementById('cropperCss')) {
+            const css = document.createElement('link');
+            css.id = 'cropperCss'; css.rel = 'stylesheet';
+            css.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
+            document.head.appendChild(css);
+        }
+    }).catch(error => { ferramentas.delete(nome); throw error; });
+    ferramentas.set(nome, promise);
+    return promise;
+}
 let sincronizacaoInicialConcluida = false;
 function registrarAlteracaoLocal() {
     // Durante a abertura, o aplicativo ainda está escolhendo entre a cópia
@@ -1078,7 +1099,8 @@ function registrarAlteracaoLocal() {
         document.getElementById('imgRecortar').onclick = () => { abrirRecorte(img); removerToolbarImg(); };
         document.getElementById('imgExcluir').onclick = () => { saveState(); img.remove(); salvarEditor(); saveState(); removerToolbarImg(); toast("🗑️ Imagem removida"); };
     }
-    function abrirRecorte(img) {
+    async function abrirRecorte(img) {
+        try { await carregarFerramenta('cropper'); } catch(error) { toast(error.message); return; }
         const modal = document.createElement('div'); modal.className = 'crop-modal';
         modal.innerHTML = `<div class="crop-container"><img id="cropImg" src="${img.src}" class="crop-image"><div class="recorte-botoes"><button id="cropOk" style="background:#22c55e;color:white;padding:10px 20px;border-radius:40px;font-size:16px">OK</button><button id="cropCancel" style="background:#ef4444;color:white;padding:10px 20px;border-radius:40px;font-size:16px">Cancelar</button></div></div>`;
         document.body.appendChild(modal);
@@ -1183,6 +1205,7 @@ function registrarAlteracaoLocal() {
             tempDiv.remove();
             
             const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
+            await carregarFerramenta('pdf');
             await html2pdf().set({ margin: [12, 12, 14, 12], filename: nomeArquivo, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'img'] }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
             toast("📄 PDF gerado!");
         } catch(err) { console.error(err); toast("❌ Erro ao gerar PDF"); } finally { document.getElementById('pdfOverlay').classList.remove('ativo'); }
@@ -1219,6 +1242,7 @@ function registrarAlteracaoLocal() {
                 .mark-yellow { background:#fef08a; } .mark-green { background:#bbf7d0; } .mark-blue { background:#bfdbfe; }
             </style><div class="cabecalho-pdf"><h1>📚 ${escapar(assunto.nome)}</h1><p>${escapar(concurso?.nome || '')} › ${escapar(materia?.nome || '')} › ${escapar(assunto.nome)}</p></div>${paginasHTML}<p style="margin-top:20px;color:#64748b;font-size:10px">Gerado em ${new Date().toLocaleString('pt-BR')}</p>`;
             const nomeArquivo = `${assunto.nome}_caderno_completo.pdf`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+            await carregarFerramenta('pdf');
             await html2pdf().set({ margin: [12, 12, 14, 12], filename: nomeArquivo, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'img'] }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
             toast("📚 PDF do assunto gerado!");
         } catch (erro) { console.error(erro); toast("❌ Erro ao gerar PDF do assunto."); }
@@ -1830,7 +1854,7 @@ if (supabaseOk) {
         atualizarInterface(user);
         if (user && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
             if (sessionStorage.getItem('cadernoSyncDoneV2') === user.id) { sincronizacaoInicialConcluida = true; avisarPronto(); setTimeout(() => window.CadernoIntegrado.migrarImagens().catch(e => console.error('Migração de imagens:', e)), 1200); }
-            else setTimeout(() => carregarDadosDoUsuario(), 500);
+            else setTimeout(() => carregarDadosDoUsuario(), integrado ? 0 : 500);
         } else if (!user) sincronizacaoInicialConcluida = false;
     });
 

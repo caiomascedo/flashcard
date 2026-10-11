@@ -6358,6 +6358,8 @@
             salvarEstado();
             iniciarSincronizacaoTempoReal();
             abrirCardRecebidoDoCaderno();
+            window.FlashcardCaderno.pronto = true;
+            window.dispatchEvent(new CustomEvent('flashcard:pronto'));
         }
 
         (async () => {
@@ -6413,7 +6415,7 @@
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=2"></script>
+<script src="caderno-integrado.js?v=3"></script>
 </body>
 </html>
 
