@@ -1816,6 +1816,7 @@
         #youtubeCard { padding: 6px 10px; font-size: .75em; border-radius: 9px; }
         body.modo-foco .flashcard { user-select: none; }
         body.modo-foco .dica-clique { display: none !important; }
+        body.modo-foco #filaErrosInfo, body.modo-foco #toast.sincronizacao { display: none !important; }
         .dica-gestos-foco { display: none; }
         body.modo-foco .dica-gestos-foco { display: block; margin-top: 6px; color: #a5b4c8; font-size: .75em; text-align: center; }
         .recursos-aviso { color: #8899aa; font-size: .85em; margin-top: 12px; }
@@ -2485,8 +2486,9 @@
         // ================================================================
         let toastTimeout;
 
-        function showToast(msg, duration = 2000) {
+        function showToast(msg, duration = 2000, tipo = '') {
             toast.textContent = msg;
+            toast.classList.toggle('sincronizacao', tipo === 'sincronizacao');
             toast.classList.add('show');
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
@@ -6319,7 +6321,7 @@
                         localStorage.setItem('flashcards_estado', JSON.stringify(novo.estado));
                         localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalNaNuvem));
                         carregarEstado();
-                        showToast(`☁️ Sincronizado com outro aparelho: ${totalNaNuvem} cards.`, 5000);
+                        showToast(`☁️ Sincronizado com outro aparelho: ${totalNaNuvem} cards.`, 5000, 'sincronizacao');
                     } else {
                         await criarBackupLocal(novo.estado, 'nuvem-menor-preservada');
                         showToast(`🛑 A nuvem enviou uma versão menor (${totalNaNuvem}). Este aparelho manteve ${flashcards.length} cards.`, 7000);
