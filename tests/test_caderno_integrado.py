@@ -77,6 +77,7 @@ def test_notebook_in_flashcards(server,width):
   assert page.locator('#cadernoIntegradoDialog').evaluate('el=>el.getBoundingClientRect().width')<=width
   # Compact controls and both expansion buttons must use the actual viewport.
   assert page.locator('.caderno-integrado-barra').evaluate('el=>el.getBoundingClientRect().height') < 60
+  assert page.locator('#cadernoIntegradoDialog').bounding_box()['height'] < 844
   page.locator('#cadernoIntegradoExpandir').click()
   page.wait_for_function("document.getElementById('cadernoIntegradoDialog').classList.contains('caderno-maximizado')")
   bounds=page.locator('#cadernoIntegradoDialog').bounding_box()

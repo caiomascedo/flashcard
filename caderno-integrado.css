@@ -21,6 +21,6 @@
 #cadernoIntegradoDialog.caderno-editor-expandido .caderno-integrado-barra,
 #cadernoIntegradoDialog.caderno-editor-expandido #cadernoIntegradoStatus { display: none; }
 @media (max-width: 600px) {
-    #cadernoIntegradoDialog { inset: 0; margin: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; border-radius: 0; border: 0; }
+    #cadernoIntegradoDialog { inset: 0; margin: auto; width: calc(100% - 12px); height: 92dvh; }
     .caderno-integrado-barra { padding-top: max(5px, env(safe-area-inset-top)); }
 }
