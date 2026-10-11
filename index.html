@@ -1786,19 +1786,19 @@
         body.modo-foco .main-content > .header-top .header-actions > button:not(#modoFocoBtn),
         body.modo-foco #subtitulo, body.modo-foco .filtros-concluidos,
         body.modo-foco .legenda-figuras, body.modo-foco .footer,
-        body.modo-foco .controles-secundarios,
+        body.modo-foco .controles-secundarios > button:not(#editarMaterialBtn),
         body.modo-foco .controles-estudo > button:nth-child(n+5) { display: none !important; }
         body.modo-foco .main-content { width: 100%; margin: 0; }
         body.modo-foco .main-content > .header-top { justify-content: flex-end; }
-        body.modo-foco .flashcard { margin-top: 10px; padding-inline: 48px; touch-action: pan-y pinch-zoom; }
-        .navegacao-lateral, .dica-navegacao-foco { display: none; }
-        body.modo-foco .navegacao-lateral { display: flex; position: absolute; inset-block: 0; width: 36px; align-items: center; justify-content: center; border: 0; border-radius: 0; background: transparent; color: #a9c9ef; font-size: 28px; cursor: pointer; z-index: 1; }
+        body.modo-foco .flashcard { margin-top: 10px; }
+        .flashcard { padding-inline: 48px; touch-action: pan-y pinch-zoom; }
+        .navegacao-lateral { display: flex; position: absolute; inset-block: 0; width: 36px; align-items: center; justify-content: center; border: 0; border-radius: 0; background: transparent; color: #a9c9ef; font-size: 28px; cursor: pointer; z-index: 1; }
         .navegacao-lateral.anterior { left: 0; }
         .navegacao-lateral.proxima { right: 0; }
-        body.modo-foco .navegacao-lateral:hover { background: rgba(100,160,220,.12); }
-        body.modo-foco .navegacao-lateral:focus-visible { outline: 2px solid #8abfff; outline-offset: -4px; }
-        body.modo-foco .modelo-caderno .navegacao-lateral { color: #42648a; }
-        body.modo-foco .dica-navegacao-foco { display: block; margin-top: 10px; color: #8899aa; font-size: .75em; text-align: center; }
+        .navegacao-lateral:hover { background: rgba(100,160,220,.12); }
+        .navegacao-lateral:focus-visible { outline: 2px solid #8abfff; outline-offset: -4px; }
+        .modelo-caderno .navegacao-lateral { color: #42648a; }
+        .dica-navegacao-foco { display: block; margin-top: 10px; color: #8899aa; font-size: .75em; text-align: center; }
 
     </style>
 </head>
@@ -1913,9 +1913,8 @@
                         <div class="leitura-card" id="leituraCard"></div>
                     </details>
                     <div class="recursos-acoes">
-                        <a id="youtubeCard" target="_blank" rel="noopener noreferrer">▶ Abrir no YouTube ↗</a>
-                        <a id="tiktokCard" target="_blank" rel="noopener noreferrer">♪ Abrir no TikTok ↗</a>
-                        <button type="button" onclick="editarRecursosCard()">✏️ Editar material</button>
+                        <a id="youtubeCard" target="_blank" rel="noopener noreferrer" onclick="abrirVideoNoApp(event, 'youtube')">▶ Abrir YouTube ↗</a>
+                        <a id="tiktokCard" target="_blank" rel="noopener noreferrer" onclick="abrirVideoNoApp(event, 'tiktok')">♪ Abrir TikTok ↗</a>
                     </div>
                     <p class="recursos-aviso" id="recursosAviso"></p>
                 </section>
@@ -1950,6 +1949,7 @@
                     <button class="medio-btn" onclick="marcarNivel('medio')">🟡 Médio</button>
                     <button class="dificil-btn" onclick="marcarNivel('dificil')">🔴 Difícil</button>
                     <button onclick="agendarFeynman()">📅 Feynman</button>
+                    <button id="editarMaterialBtn" type="button" onclick="editarRecursosCard()">✏️ Editar material</button>
                     <button id="modeloVisualBtn" onclick="alternarModeloVisual(event)" title="Alternar aparência do card">🎨 Visual: Padrão</button>
                     <button onclick="copiarCardAtualLimpo()">📋 Copiar</button>
                     <button onclick="enviarCardAoCaderno()" title="Atalho: C">📓 Caderno (C)</button>
@@ -3488,7 +3488,7 @@
 
         cardEl.addEventListener('pointerdown', (event) => {
             ignorarCliqueDoGesto = false;
-            if (!modoFoco || !total || !event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, textarea, select, summary')) return;
+            if (!total || !event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, textarea, select, summary')) return;
             gestoCard = { id: event.pointerId, x: event.clientX, y: event.clientY };
             cardEl.setPointerCapture(event.pointerId);
         });
@@ -3500,7 +3500,7 @@
             gestoCard = null;
             ignorarCliqueDoGesto = Math.abs(dx) > 10 || Math.abs(dy) > 10;
             const limite = Math.max(55, cardEl.clientWidth * .14);
-            if (modoFoco && Math.abs(dx) >= limite && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (Math.abs(dx) >= limite && Math.abs(dx) > Math.abs(dy) * 1.5) {
                 if (dx < 0) proximo();
                 else anterior();
             }
@@ -3530,6 +3530,58 @@
             } catch { return ''; }
         }
 
+        function destinoAppVideo(href, plataforma, agente = navigator.userAgent) {
+            const seguro = normalizarLinkVideo(href, plataforma);
+            if (!seguro) return null;
+            const url = new URL(seguro);
+            // Converte o link curto do YouTube para o endereço reconhecido pelo app.
+            if (plataforma === 'youtube' && url.hostname === 'youtu.be') {
+                const id = url.pathname.split('/')[1];
+                if (id) {
+                    url.hostname = 'www.youtube.com';
+                    url.pathname = '/watch';
+                    url.searchParams.set('v', id);
+                }
+            }
+            const web = url.href;
+            if (/Android/i.test(agente)) {
+                const pacote = plataforma === 'youtube' ? 'com.google.android.youtube' : 'com.zhiliaoapp.musically';
+                return { web, app: `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=${pacote};S.browser_fallback_url=${encodeURIComponent(web)};end`, fallback: false };
+            }
+            if (/iPhone|iPad|iPod/i.test(agente) || (/Macintosh/i.test(agente) && navigator.maxTouchPoints > 1)) {
+                if (plataforma === 'youtube') return { web, app: web.replace(/^https:/, 'youtube:'), fallback: true };
+                const video = url.pathname.match(/\/video\/(\d+)/);
+                if (video) return { web, app: 'snssdk1233://aweme/detail/' + video[1], fallback: true };
+                // Links curtos e buscas usam o Universal Link oficial do TikTok.
+                return { web, app: web, fallback: false };
+            }
+            return { web, app: null, fallback: false };
+        }
+
+        function abrirVideoNoApp(event, plataforma) {
+            // No computador e em cliques modificados, preserva a abertura normal do link.
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            const destino = destinoAppVideo(event.currentTarget.href, plataforma);
+            if (!destino?.app) return;
+            event.preventDefault();
+            if (destino.fallback) {
+                let timer;
+                const cancelar = () => {
+                    clearTimeout(timer);
+                    document.removeEventListener('visibilitychange', aoOcultar);
+                    window.removeEventListener('pagehide', cancelar);
+                };
+                const aoOcultar = () => { if (document.hidden) cancelar(); };
+                document.addEventListener('visibilitychange', aoOcultar);
+                window.addEventListener('pagehide', cancelar, { once: true });
+                timer = setTimeout(() => {
+                    cancelar();
+                    if (!document.hidden) window.location.assign(destino.web);
+                }, 1800);
+            }
+            window.location.assign(destino.app);
+        }
+
         function recursosComplementares(item) {
             return {
                 leitura: typeof item.leitura === 'string' ? item.leitura.trim() : '',
@@ -3541,6 +3593,7 @@
         function atualizarRecursosCard(card) {
             const painel = document.getElementById('recursosCard');
             painel.hidden = !card || String(card.pergunta || '').startsWith('📁 Pasta:');
+            document.getElementById('editarMaterialBtn').disabled = !card || String(card.pergunta || '').startsWith('📁 Pasta:');
             if (painel.hidden) { delete painel.dataset.indice; return; }
             const detalhes = document.getElementById('leituraDetalhes');
             const indice = String(getIndiceReal());
@@ -3551,13 +3604,14 @@
             document.getElementById('leituraCard').textContent = recursos.leitura;
             for (const plataforma of ['youtube', 'tiktok']) {
                 const link = document.getElementById(plataforma + 'Card');
-                link.hidden = !recursos[plataforma];
-                if (recursos[plataforma]) link.href = recursos[plataforma];
-                else link.removeAttribute('href');
+                link.hidden = false;
+                const assunto = [card.materia, card.assunto, card.topico].filter(Boolean).join(' ') || card.pergunta || 'Estudos';
+                link.href = recursos[plataforma] || (plataforma === 'youtube'
+                    ? 'https://www.youtube.com/results?search_query=' + encodeURIComponent(assunto)
+                    : 'https://www.tiktok.com/search?q=' + encodeURIComponent(assunto));
+                link.title = recursos[plataforma] ? 'Abrir o vídeo salvo no aplicativo' : 'Buscar vídeos sobre este assunto no aplicativo';
             }
-            document.getElementById('recursosAviso').textContent = recursos.leitura || recursos.youtube || recursos.tiktok
-                ? 'Os vídeos abrem em outra aba. Seu estudo continua aqui.'
-                : 'Adicione uma leitura ou links de vídeos em Editar material ou importe pelo modelo JSON.';
+            document.getElementById('recursosAviso').textContent = 'No celular, abre no app quando disponível. Sem link salvo, busca vídeos sobre o assunto. Adicione links em ✏️ Editar material, junto dos controles abaixo.';
         }
 
         function editarRecursosCard() {
