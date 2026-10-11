@@ -9,7 +9,74 @@
     let carregando = false;
     let enviando = false;
     let timeout;
+    let cardsTimer;
+    let expandidoAntesDoEditor = false;
+    let ultimaVersaoCards = '';
     const pendentes = [];
+
+    // Preserve progress and stable links while notebook authors edit their cards.
+    function sincronizarCards() {
+        if (!pronto) return;
+        const sources = frame.contentWindow.CadernoIntegrado.cards();
+        const versao = JSON.stringify(sources);
+        if (versao === ultimaVersaoCards) return;
+        const porId = new Map(flashcards.filter(card => card.cadernoId).map(card => [card.cadernoId, card]));
+        const porOrigem = new Map();
+        if (sources.some(card => card.origemImportacao)) {
+            flashcards.forEach(card => porOrigem.set(idImportacaoCaderno(card), card));
+        }
+        let mudou = false;
+        for (const source of sources) {
+            if (!source.pergunta || !source.resposta) continue;
+            let card = porId.get(source.id);
+            if (!card && source.origemImportacao) {
+                card = porOrigem.get(source.origemImportacao);
+            }
+            if (!card) {
+                card = { tipo: 'flashcard', topico: 'Caderno', nivel: 'medio' };
+                flashcards.push(card);
+                respondido.push(false);
+                statusCard.push('nao');
+                mudou = true;
+            }
+            const fields = {
+                cadernoId: source.id,
+                concurso: source.concurso, materia: source.materia, assunto: source.assunto,
+                pergunta: source.pergunta, resposta: source.resposta, dica: source.dica,
+                tags: source.tags
+            };
+            if (source.origemImportacao) fields.cadernoOrigemImportacao = source.origemImportacao;
+            for (const [key, value] of Object.entries(fields)) {
+                if (JSON.stringify(card[key]) !== JSON.stringify(value)) {
+                    card[key] = value;
+                    mudou = true;
+                }
+            }
+            porId.set(source.id, card);
+        }
+        if (!mudou) { ultimaVersaoCards = versao; return; }
+        total = flashcards.length;
+        if (filtroAtivo) {
+            if (filtroAtivo.path) indicesFiltrados = getIndicesDaPasta(filtroAtivo.path);
+            else {
+                indicesFiltrados = flashcards.map((card, index) => {
+                    const matches = filtroAtivo.tipo === 'busca'
+                        ? [card.concurso, card.materia, card.assunto, card.topico, card.pergunta, card.resposta, card.dica]
+                            .join(' ').toLocaleLowerCase('pt-BR').includes(filtroAtivo.termo.toLocaleLowerCase('pt-BR'))
+                        : card[filtroAtivo.nivel] === filtroAtivo.nome;
+                    return matches ? index : -1;
+                }).filter(index => index >= 0);
+            }
+        }
+        if (salvarEstado()) ultimaVersaoCards = versao;
+        atualizarCard();
+        renderizarArvore();
+    }
+    function definirExpandido(expanded) {
+        dialog.classList.toggle('caderno-maximizado', expanded);
+        expand.setAttribute('aria-pressed', String(expanded));
+        expand.textContent = expanded ? '↙ Reduzir' : '⛶ Expandir';
+    }
 
     function falha(mensagem) {
         clearTimeout(timeout);
@@ -24,7 +91,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=1', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=2', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -34,7 +101,8 @@
                 await frame.contentWindow.CadernoIntegrado.importar(pendentes[0]);
                 pendentes.shift();
             }
-            status.textContent = 'Anotações salvas automaticamente. Sua conta também sincroniza o caderno na nuvem.';
+            sincronizarCards();
+            status.textContent = '';
         } catch (error) {
             console.error(error);
             falha('Não foi possível anotar o card. Ele está aguardando uma nova tentativa.');
@@ -47,17 +115,16 @@
         else enviarPendentes();
     };
     function salvar() {
-        if (pronto) frame.contentWindow.CadernoIntegrado.salvar();
+        if (pronto) {
+            frame.contentWindow.CadernoIntegrado.salvar();
+            sincronizarCards();
+        }
     }
     document.getElementById('cadernoIntegradoFechar').onclick = () => { salvar(); dialog.close(); };
     dialog.addEventListener('cancel', salvar);
     dialog.addEventListener('close', salvar);
     retry.onclick = () => { if (pronto) { retry.hidden = true; enviarPendentes(); } else carregar(); };
-    expand.onclick = () => {
-        const expanded = dialog.classList.toggle('caderno-maximizado');
-        expand.setAttribute('aria-pressed', String(expanded));
-        expand.textContent = expanded ? '↙ Restaurar' : '⛶ Maximizar';
-    };
+    expand.onclick = () => definirExpandido(!dialog.classList.contains('caderno-maximizado'));
     window.addEventListener('message', event => {
         if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
         if (event.data?.tipo === 'caderno:pronto') {
@@ -68,8 +135,20 @@
             enviarPendentes();
         } else if (event.data?.tipo === 'caderno:erro') {
             falha(event.data.mensagem);
+        } else if (event.data?.tipo === 'caderno:cards-alterados') {
+            clearTimeout(cardsTimer);
+            cardsTimer = setTimeout(sincronizarCards, 100);
+        } else if (event.data?.tipo === 'caderno:editor-expandido') {
+            const expanded = !!event.data.expanded;
+            if (expanded) expandidoAntesDoEditor = dialog.classList.contains('caderno-maximizado');
+            dialog.classList.toggle('caderno-editor-expandido', expanded);
+            definirExpandido(expanded || expandidoAntesDoEditor);
         } else if (event.data?.tipo === 'caderno:abrir-original') {
-            const index = flashcards.findIndex(card => idImportacaoCaderno(card) === event.data.idImportacao);
+            sincronizarCards();
+            const index = flashcards.findIndex(card =>
+                (event.data.cadernoId && card.cadernoId === event.data.cadernoId) ||
+                (event.data.idImportacao && idImportacaoCaderno(card) === event.data.idImportacao)
+            );
             if (index < 0) { status.textContent = 'O card original não está disponível nos Flashcards.'; return; }
             salvar();
             sairDoModoEspecial();

@@ -62,7 +62,7 @@ def test_notebook_in_flashcards(server,width):
   assert frame.locator('.flashcard-importado').count()==1
   assert page.evaluate("JSON.parse(localStorage.dados_concursos).concursos.some(c=>c.nome==='Anterior')")
   frame.locator('#editor').evaluate("editor=>{editor.innerHTML+='<p>Minha anotação persistente</p>';editor.dispatchEvent(new Event('input',{bubbles:true}));}")
-  page.get_by_role('button',name='← Voltar aos flashcards').click()
+  page.get_by_role('button',name='← Flashcards').click()
   page.get_by_role('button',name='📓 Anotar no Caderno (C)',exact=True).click()
   frame.locator('.flashcard-importado').wait_for()
   assert frame.locator('.flashcard-importado').count()==1
@@ -75,5 +75,46 @@ def test_notebook_in_flashcards(server,width):
   page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
   assert 'Minha anotação persistente' in frame.locator('#editor').inner_text()
   assert page.locator('#cadernoIntegradoDialog').evaluate('el=>el.getBoundingClientRect().width')<=width
+  # Compact controls and both expansion buttons must use the actual viewport.
+  assert page.locator('.caderno-integrado-barra').evaluate('el=>el.getBoundingClientRect().height') < 60
+  page.locator('#cadernoIntegradoExpandir').click()
+  page.wait_for_function("document.getElementById('cadernoIntegradoDialog').classList.contains('caderno-maximizado')")
+  bounds=page.locator('#cadernoIntegradoDialog').bounding_box()
+  assert bounds == {'x':0,'y':0,'width':width,'height':844}, bounds
+  page.locator('#cadernoIntegradoExpandir').click()
+  frame.locator('#btnExpandir').click()
+  page.wait_for_function("document.getElementById('cadernoIntegradoDialog').classList.contains('caderno-editor-expandido')")
+  assert page.locator('#cadernoIntegradoFrame').bounding_box() == {'x':0,'y':0,'width':width,'height':844}
+  frame.locator('.close-expand').click()
+  page.wait_for_function("!document.getElementById('cadernoIntegradoDialog').classList.contains('caderno-editor-expandido')")
+  # Author a new card through the notebook form and study it in the main app.
+  before=page.evaluate('flashcards.length')
+  frame.locator('#btnCriarFlashcard').click()
+  frame.locator('#inputPergunta').fill('Pergunta criada no caderno')
+  frame.locator('#inputResposta').fill('Resposta criada no caderno')
+  frame.locator('#modalSalvar').click()
+  page.wait_for_function("flashcards.some(card=>card.pergunta==='Pergunta criada no caderno')")
+  assert page.evaluate('flashcards.length') == before+1
+  source_id=page.evaluate("flashcards.find(card=>card.pergunta==='Pergunta criada no caderno').cadernoId")
+  frame.locator('#previewFlashcard .flashcard-item').filter(has_text='Pergunta criada no caderno').get_by_role('button',name='🧠 Flashcard',exact=True).click()
+  page.wait_for_function("!document.getElementById('cadernoIntegradoDialog').open")
+  assert page.locator('#pergunta').inner_text() == 'Pergunta criada no caderno'
+  page.evaluate("respondido[indiceAtual]=true;statusCard[indiceAtual]='acertou';salvarEstado()")
+  page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
+  iframe=page.locator('#cadernoIntegradoFrame').element_handle().content_frame()
+  iframe.evaluate('(id)=>editarFlashcard(Number(id))',source_id)
+  frame.locator('#inputPergunta').fill('Pergunta editada no caderno')
+  frame.locator('#inputResposta').fill('Resposta editada')
+  frame.locator('#modalSalvar').click()
+  page.wait_for_function("getCardAtual().pergunta==='Pergunta editada no caderno'")
+  assert page.evaluate('flashcards.length') == before+1
+  assert page.evaluate('respondido[indiceAtual] && statusCard[indiceAtual]==="acertou"')
+  assert page.evaluate("JSON.parse(localStorage.flashcards_estado).flashcards.some(card=>card.pergunta==='Pergunta editada no caderno')")
+  # Sending that same notebook card back to annotate must not duplicate it.
+  notebook_count=iframe.evaluate('CadernoIntegrado.cards().length')
+  page.locator('#cadernoIntegradoFechar').click()
+  page.get_by_role('button',name='📓 Anotar no Caderno (C)',exact=True).click()
+  page.wait_for_timeout(250)
+  assert iframe.evaluate('CadernoIntegrado.cards().length') == notebook_count
   assert not errors, errors
   browser.close()

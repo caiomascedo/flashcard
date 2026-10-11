@@ -2,6 +2,10 @@
 
 O botão **Caderno completo** abre todas as funções do caderno dentro dos Flashcards.
 **Anotar no Caderno (C)** abre o caderno e inclui o card atual na pasta correspondente.
+Cards criados ou editados no caderno aparecem automaticamente no estudo principal,
+com vínculos estáveis para evitar duplicação e preservar o progresso de resposta.
+A barra é compacta; **Expandir** ocupa toda a tela. Expandir o editor também
+ocupa a tela inteira, escondendo a barra até sair do editor expandido.
 O botão **Flashcard**, dentro do caderno, volta ao original na mesma tela.
 
 `caderno.html` incorpora o caderno completo de `caiomascedo/caderno`, versão
@@ -14,7 +18,7 @@ A sincronização inicial termina antes de permitir edição ou importação de 
 Não é necessário migrar o banco. Na hospedagem GitHub Pages, ambos os caminhos
 compartilham o armazenamento local da mesma origem. As anotações existentes na
 nuvem são carregadas pela mesma conta. Exportar/importar JSON e PDF continuam
- disponíveis no próprio caderno.
+disponíveis no próprio caderno.
 
 ## Verificação
 

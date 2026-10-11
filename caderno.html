@@ -510,6 +510,7 @@ function registrarAlteracaoLocal() {
     if (!sincronizacaoInicialConcluida) return;
     localStorage.setItem('caderno_local_updated_at', new Date().toISOString());
     window.dispatchEvent(new CustomEvent('caderno:alterado'));
+    if (integrado) window.parent.postMessage({ tipo: 'caderno:cards-alterados' }, location.origin);
 }
 
 // ==================== CÓDIGO PRINCIPAL ====================
@@ -518,6 +519,15 @@ function registrarAlteracaoLocal() {
     function fecharModal(id) { document.getElementById(id).classList.remove('ativo'); }
 
     window.CadernoIntegrado = {
+        cards: () => dados.flashcards.map(card => {
+            const concurso = dados.concursos.find(c => c.id == card.concursoId);
+            const materia = concurso?.materias?.find(m => m.id == card.materiaId);
+            const assunto = materia?.assuntos?.find(a => a.id == card.assuntoId);
+            return { id: String(card.id), origemImportacao: card.origemImportacao || '',
+                concurso: concurso?.nome || 'Sem concurso', materia: materia?.nome || 'Sem matéria',
+                assunto: assunto?.nome || 'Sem assunto', pergunta: card.pergunta, resposta: card.resposta,
+                dica: card.dica || '', tags: card.tags || [] };
+        }),
         importar: async card => { if (!sincronizacaoInicialConcluida) throw Error('Aguarde a sincronização do caderno.'); salvarEditor(); await importarFlashcardRecebido(card); },
         salvar: () => { if (sincronizacaoInicialConcluida) salvarEditor(); },
         migrarImagens: () => migrarImagensBase64Existentes(),
@@ -921,14 +931,16 @@ function registrarAlteracaoLocal() {
         const editor = document.getElementById('editor');
         if (!expanded) { 
             editor.classList.add('expanded'); 
-            expanded = true; 
+            expanded = true;
+            if (integrado) window.parent.postMessage({ tipo: 'caderno:editor-expandido', expanded: true }, location.origin);
             closeBtn = document.createElement('button'); 
             closeBtn.innerText = '✕ Sair (ESC)'; 
             closeBtn.className = 'close-expand'; 
             closeBtn.onclick = () => { 
                 editor.classList.remove('expanded'); 
                 if (closeBtn) closeBtn.remove(); 
-                expanded = false; 
+                expanded = false;
+                if (integrado) window.parent.postMessage({ tipo: 'caderno:editor-expandido', expanded: false }, location.origin);
                 editor.focus(); 
             }; 
             document.body.appendChild(closeBtn); 
@@ -936,7 +948,8 @@ function registrarAlteracaoLocal() {
         else { 
             editor.classList.remove('expanded'); 
             if (closeBtn) closeBtn.remove(); 
-            expanded = false; 
+            expanded = false;
+            if (integrado) window.parent.postMessage({ tipo: 'caderno:editor-expandido', expanded: false }, location.origin);
         }
         editor.focus();
     };
@@ -1444,13 +1457,13 @@ function registrarAlteracaoLocal() {
 
     window.abrirNoSiteFlashcards = function(id) {
         const card = dados.flashcards.find(f => f.id == id);
-        if (!card?.origemImportacao) {
-            toast('ℹ️ Este card foi criado no Caderno e não possui um original no site de Flashcards.');
+        if (integrado && card) {
+            salvarEditor();
+            window.parent.postMessage({ tipo: 'caderno:abrir-original', idImportacao: card.origemImportacao, cadernoId: String(card.id) }, location.origin);
             return;
         }
-        if (integrado) {
-            salvarEditor();
-            window.parent.postMessage({ tipo: 'caderno:abrir-original', idImportacao: card.origemImportacao }, location.origin);
+        if (!card?.origemImportacao) {
+            toast('ℹ️ Este card foi criado no Caderno e não possui um original no site de Flashcards.');
             return;
         }
         const destino = criarLinkDoFlashcard(card);
@@ -1463,7 +1476,7 @@ function registrarAlteracaoLocal() {
         if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) { preview.innerHTML = ""; return; }
         const cards = dados.flashcards.filter(f => f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == assuntoAtualId);
         if (!cards.length) { preview.innerHTML = "Nenhum flashcard"; return; }
-        preview.innerHTML = cards.map(c => { const dias = getDiasRestante(c.proxima_revisao); const badgeClass = dias <= 0 ? 'urgent' : (dias === 1 ? 'today' : ''); const badgeText = dias <= 0 ? '⚠️ Vencido' : (dias === 1 ? '📅 Hoje' : `📅 em ${dias} dias`); const origem = c.origemImportacao ? `<button onclick="event.stopPropagation(); abrirNoSiteFlashcards(${c.id})" class="text-xs text-purple-700" title="Abrir este card no site de Flashcards">🧠 Flashcard</button>` : ''; return `<div class="flashcard-item cursor-pointer" onclick="editarFlashcard(${c.id})"><div class="flashcard-header"><div class="font-bold text-sm truncate">📌 ${escapar(c.pergunta)}</div><span class="revisao-badge ${badgeClass}">${badgeText}</span></div><div class="flex justify-end gap-2 mt-1">${origem}<button onclick="event.stopPropagation(); editarFlashcard(${c.id})" class="text-xs text-blue-600">✏️</button><button onclick="event.stopPropagation(); excluirFlashcard(${c.id})" class="text-xs text-red-600">🗑️</button></div></div>`; }).join('');
+        preview.innerHTML = cards.map(c => { const dias = getDiasRestante(c.proxima_revisao); const badgeClass = dias <= 0 ? 'urgent' : (dias === 1 ? 'today' : ''); const badgeText = dias <= 0 ? '⚠️ Vencido' : (dias === 1 ? '📅 Hoje' : `📅 em ${dias} dias`); const origem = (integrado || c.origemImportacao) ? `<button onclick="event.stopPropagation(); abrirNoSiteFlashcards(${c.id})" class="text-xs text-purple-700" title="Estudar este card nos Flashcards">🧠 Flashcard</button>` : ''; return `<div class="flashcard-item cursor-pointer" onclick="editarFlashcard(${c.id})"><div class="flashcard-header"><div class="font-bold text-sm truncate">📌 ${escapar(c.pergunta)}</div><span class="revisao-badge ${badgeClass}">${badgeText}</span></div><div class="flex justify-end gap-2 mt-1">${origem}<button onclick="event.stopPropagation(); editarFlashcard(${c.id})" class="text-xs text-blue-600">✏️</button><button onclick="event.stopPropagation(); excluirFlashcard(${c.id})" class="text-xs text-red-600">🗑️</button></div></div>`; }).join('');
     }
     window.editarFlashcard = function(id) { const card = dados.flashcards.find(f=>f.id==id); if(!card) return; editandoFlashcardId = id; document.getElementById('inputPergunta').value = card.pergunta; document.getElementById('inputResposta').value = card.resposta; document.getElementById('inputTags').value = (card.tags || []).join(', '); abrirModal('modalFlashcard'); };
     window.excluirFlashcard = function(id) { if(confirm("Excluir?")) { dados.flashcards = dados.flashcards.filter(f=>f.id!=id); salvarTudo(); atualizarPreview(); atualizarStats(); toast("🗑️ Excluído"); } };
@@ -1478,7 +1491,7 @@ function registrarAlteracaoLocal() {
         if (studyIdx >= studyQueue.length) { document.getElementById('estudoConteudo').innerHTML = `<div class="study-shell rounded-2xl p-8 text-center my-auto"><div class="text-5xl mb-4">🎉</div><h3 class="text-2xl font-bold text-green-700 mb-2">Revisão concluída!</h3><p class="text-gray-600 mb-5">Você revisou ${studySessionTotal} flashcard(s) nesta sessão.</p><button onclick="document.getElementById('fecharEstudo').click()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold">✅ Finalizar</button></div>`; estudoModalAberto = false; atualizarStats(); return; } 
         const card = studyQueue[studyIdx]; estudoFlipped = false; respostaEmAndamento = false;
         const percentualSessao = studySessionTotal ? Math.round((studyIdx / studySessionTotal) * 100) : 0;
-        const botaoOrigem = card.origemImportacao ? `<button onclick="abrirNoSiteFlashcards(${card.id})" class="mt-3 bg-indigo-600 text-white py-2 rounded-xl text-sm w-full">🧠 Abrir no site de Flashcards</button>` : '';
+        const botaoOrigem = (integrado || card.origemImportacao) ? `<button onclick="abrirNoSiteFlashcards(${card.id})" class="mt-3 bg-indigo-600 text-white py-2 rounded-xl text-sm w-full">🧠 Estudar nos Flashcards</button>` : '';
         document.getElementById('estudoConteudo').innerHTML = `<div class="study-shell rounded-2xl p-3 mb-3"><div class="flex justify-between text-xs font-bold text-gray-600 mb-2"><span>🧠 ${studyIdx+1} de ${studySessionTotal}</span><span>${percentualSessao}%</span></div><div class="study-progress"><div style="width:${percentualSessao}%"></div></div></div><div class="relative w-full aspect-[4/3] mb-4 cursor-pointer" onclick="virarCard()"><div class="card-inner w-full h-full" id="estudoInner"><div class="front study-front p-5 rounded-2xl flex flex-col items-center justify-center text-center"><div class="study-label">❓ Pergunta</div><div class="text-xl font-bold leading-relaxed">${escapar(card.pergunta)}</div><div class="text-sm text-green-700 font-semibold mt-5">Toque para revelar ✨</div></div><div class="back study-back p-5 rounded-2xl flex flex-col items-center justify-center text-center"><div class="study-label">✅ Resposta revelada</div><div class="study-answer text-lg font-semibold leading-relaxed mb-3">${escapar(card.resposta)}</div></div></div></div><div id="botoesDif" class="hidden grid grid-cols-3 gap-3 mt-2"><button onclick="responder(2)" class="study-rate bg-red-500 p-3 rounded-xl text-white font-bold">🔴 Difícil</button><button onclick="responder(3)" class="study-rate bg-orange-500 p-3 rounded-xl text-white font-bold">🟠 Médio</button><button onclick="responder(4)" class="study-rate bg-green-500 p-3 rounded-xl text-white font-bold">🟢 Fácil</button></div><div id="feedbackResposta"></div>${botaoOrigem}<button id="estudoBtnVoz" class="mt-3 bg-purple-600 text-white py-2 rounded-xl text-sm w-full">🎤 Responder por Voz</button>`;
         const quadroEstudo = document.querySelector('#estudoInner')?.parentElement;
         const textoGrande = (card.pergunta.length + card.resposta.length + (card.dica || '').length) > 420;
@@ -1608,7 +1621,8 @@ function registrarAlteracaoLocal() {
         }
 
         salvarEditor();
-        const cardExistente = dados.flashcards.find(card => card.origemImportacao === recebido.idImportacao);
+        const cardExistente = dados.flashcards.find(card => (recebido.cadernoId && String(card.id) === String(recebido.cadernoId)) || card.origemImportacao === recebido.idImportacao);
+        if (cardExistente && !cardExistente.origemImportacao) cardExistente.origemImportacao = recebido.idImportacao;
         const cardJaExiste = !!cardExistente;
         if (cardExistente && recebido.siteOrigem) cardExistente.siteOrigem = recebido.siteOrigem;
 

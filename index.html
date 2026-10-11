@@ -1845,7 +1845,7 @@
         .dica-navegacao-foco { display: block; margin-top: 10px; color: #8899aa; font-size: .75em; text-align: center; }
 
     </style>
-<link rel="stylesheet" href="caderno-integrado.css?v=1">
+<link rel="stylesheet" href="caderno-integrado.css?v=2">
 </head>
 <body>
     <div class="auth-overlay" id="authOverlay">
@@ -4692,6 +4692,8 @@
         }
 
         function idImportacaoCaderno(card) {
+            if (card.cadernoOrigemImportacao) return card.cadernoOrigemImportacao;
+            if (card.cadernoId) return `caderno-${card.cadernoId}`;
             const texto = [card.idBancoPMPI, card.id, card.concurso, card.materia, card.assunto, card.topico, card.pergunta, card.resposta].filter(v => v != null).join('|');
             let hash = 5381;
             for (let i = 0; i < texto.length; i++) hash = ((hash * 33) ^ texto.charCodeAt(i)) >>> 0;
@@ -4704,6 +4706,7 @@
             const payload = {
                 versao: 1,
                 idImportacao: idImportacaoCaderno(card),
+                cadernoId: card.cadernoId || null,
                 siteOrigem: location.origin === 'null' ? 'https://caiomascedo.github.io/flashcard/' : location.href.split('#')[0],
                 concurso: card.concurso || 'Sem concurso',
                 materia: card.materia || 'Sem matéria',
@@ -6402,15 +6405,15 @@
 
 <dialog id="cadernoIntegradoDialog" aria-labelledby="cadernoIntegradoTitulo">
     <div class="caderno-integrado-barra">
-        <strong id="cadernoIntegradoTitulo">📓 Caderno de erros</strong>
-        <button type="button" id="cadernoIntegradoExpandir" aria-pressed="false">⛶ Maximizar</button>
-        <button type="button" id="cadernoIntegradoFechar">← Voltar aos flashcards</button>
+        <strong id="cadernoIntegradoTitulo">📓 Caderno</strong>
+        <button type="button" id="cadernoIntegradoExpandir" aria-pressed="false" title="Ocupar toda a tela">⛶ Expandir</button>
+        <button type="button" id="cadernoIntegradoFechar">← Flashcards</button>
     </div>
     <p id="cadernoIntegradoStatus" role="status">Carregando caderno…</p>
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=1"></script>
+<script src="caderno-integrado.js?v=2"></script>
 </body>
 </html>
 

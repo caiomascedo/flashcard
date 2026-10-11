@@ -1,20 +1,26 @@
 #cadernoIntegradoDialog {
-    box-sizing: border-box; width: min(1200px, 96vw); height: 92dvh;
+    box-sizing: border-box; position: fixed; width: min(1200px, 96vw); height: 92dvh;
     max-width: 100vw; max-height: 100dvh; padding: 0; border: 1px solid #496583;
-    border-radius: 16px; background: #f8fafc; color: #1e293b; overflow: hidden;
+    border-radius: 12px; background: #f8fafc; color: #1e293b; overflow: hidden;
+    font: 14px/1.3 system-ui, sans-serif; text-size-adjust: 100%; -webkit-text-size-adjust: 100%;
 }
 #cadernoIntegradoDialog[open] { display: flex; flex-direction: column; }
 #cadernoIntegradoDialog::backdrop { background: rgb(10 20 35 / .7); }
-#cadernoIntegradoDialog.caderno-maximizado { width: 100vw; height: 100dvh; border-radius: 0; }
-.caderno-integrado-barra { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; background: #e2e8f0; }
-.caderno-integrado-barra strong { flex: 1; }
-#cadernoIntegradoDialog button { padding: 8px 12px; border: 1px solid #94a3b8; border-radius: 8px; background: white; color: #1e293b; cursor: pointer; font: inherit; }
-#cadernoIntegradoStatus { margin: 0; padding: 6px 12px; font-size: 12px; }
+#cadernoIntegradoDialog.caderno-maximizado {
+    inset: 0; margin: 0; width: 100%; height: 100dvh; max-width: none; max-height: none;
+    border: 0; border-radius: 0; transform: none;
+}
+.caderno-integrado-barra { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px; padding: 5px 8px; background: #e2e8f0; flex-shrink: 0; }
+.caderno-integrado-barra strong { flex: 1; white-space: nowrap; font: 600 13px/1.2 system-ui, sans-serif; }
+#cadernoIntegradoDialog button { padding: 6px 9px; min-width: 0; min-height: 32px; border: 1px solid #94a3b8; border-radius: 6px; background: white; color: #1e293b; cursor: pointer; font: 500 12px/1.2 system-ui, sans-serif; white-space: nowrap; }
+#cadernoIntegradoStatus { margin: 0; padding: 4px 8px; font-size: 11px; }
+#cadernoIntegradoStatus:empty { display: none; }
 #cadernoIntegradoFrame { flex: 1; width: 100%; min-height: 0; border: 0; background: #f8fafc; }
 #cadernoIntegradoDialog [hidden] { display: none; }
 #cadernoIntegradoRepetir { align-self: flex-start; margin: 12px; }
+#cadernoIntegradoDialog.caderno-editor-expandido .caderno-integrado-barra,
+#cadernoIntegradoDialog.caderno-editor-expandido #cadernoIntegradoStatus { display: none; }
 @media (max-width: 600px) {
-    #cadernoIntegradoDialog { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
-    .caderno-integrado-barra { padding-top: max(8px, env(safe-area-inset-top)); }
-    .caderno-integrado-barra strong { flex-basis: 100%; }
+    #cadernoIntegradoDialog { inset: 0; margin: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; border-radius: 0; border: 0; }
+    .caderno-integrado-barra { padding-top: max(5px, env(safe-area-inset-top)); }
 }
