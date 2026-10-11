@@ -1790,7 +1790,16 @@
         body.modo-foco .controles-estudo > button:nth-child(n+5) { display: none !important; }
         body.modo-foco .main-content { width: 100%; margin: 0; }
         body.modo-foco .main-content > .header-top { justify-content: flex-end; }
-        body.modo-foco .flashcard { margin-top: 10px; }
+        body.modo-foco .flashcard { margin-top: 10px; padding-inline: 48px; touch-action: pan-y pinch-zoom; }
+        .navegacao-lateral, .dica-navegacao-foco { display: none; }
+        body.modo-foco .navegacao-lateral { display: flex; position: absolute; inset-block: 0; width: 36px; align-items: center; justify-content: center; border: 0; border-radius: 0; background: transparent; color: #a9c9ef; font-size: 28px; cursor: pointer; z-index: 1; }
+        .navegacao-lateral.anterior { left: 0; }
+        .navegacao-lateral.proxima { right: 0; }
+        body.modo-foco .navegacao-lateral:hover { background: rgba(100,160,220,.12); }
+        body.modo-foco .navegacao-lateral:focus-visible { outline: 2px solid #8abfff; outline-offset: -4px; }
+        body.modo-foco .modelo-caderno .navegacao-lateral { color: #42648a; }
+        body.modo-foco .dica-navegacao-foco { display: block; margin-top: 10px; color: #8899aa; font-size: .75em; text-align: center; }
+
     </style>
 </head>
 <body>
@@ -1887,12 +1896,16 @@
 
             <div class="container">
                 <div class="flashcard" id="flashcard" onclick="virarCard()">
+                    <button type="button" class="navegacao-lateral anterior" aria-label="Card anterior" title="Card anterior" onclick="event.stopPropagation(); anterior()">‹</button>
+                    <button type="button" class="navegacao-lateral proxima" aria-label="Próximo card" title="Próximo card" onclick="event.stopPropagation(); proximo()">›</button>
                     <span class="card-number" id="cardNumero">#001</span>
                     <span class="card-status" id="cardStatus">⚪ Não respondido</span>
                     <div class="pergunta" id="pergunta">Carregando...</div>
                     <div class="resposta" id="resposta"></div>
                     <div class="dica-clique"><i>👆 Clique para revelar a resposta + dica</i></div>
                 </div>
+
+                <p class="dica-navegacao-foco">Deslize ← para o próximo ou → para o anterior. Você também pode tocar nas laterais.</p>
 
                 <section class="recursos-card" id="recursosCard" aria-label="Conteúdo complementar" hidden>
                     <details id="leituraDetalhes">
@@ -3459,6 +3472,9 @@
         function alternarModoFoco() {
             modoFoco = !modoFoco;
             document.body.classList.toggle('modo-foco', modoFoco);
+            aplicarModeloVisual(false);
+            gestoCard = null;
+            ignorarCliqueDoGesto = false;
             const botao = document.getElementById('modoFocoBtn');
             botao.textContent = modoFoco ? '✕ Sair do foco' : '🎯 Modo foco';
             botao.setAttribute('aria-pressed', String(modoFoco));
@@ -3466,6 +3482,43 @@
             if (modoFoco && window.innerWidth <= 900 && explorerOpen) toggleExplorer();
             corrigirDeslocamentoHorizontal();
         }
+
+        let gestoCard = null;
+        let ignorarCliqueDoGesto = false;
+
+        cardEl.addEventListener('pointerdown', (event) => {
+            ignorarCliqueDoGesto = false;
+            if (!modoFoco || !total || !event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, textarea, select, summary')) return;
+            gestoCard = { id: event.pointerId, x: event.clientX, y: event.clientY };
+            cardEl.setPointerCapture(event.pointerId);
+        });
+
+        cardEl.addEventListener('pointerup', (event) => {
+            if (!gestoCard || gestoCard.id !== event.pointerId) return;
+            const dx = event.clientX - gestoCard.x;
+            const dy = event.clientY - gestoCard.y;
+            gestoCard = null;
+            ignorarCliqueDoGesto = Math.abs(dx) > 10 || Math.abs(dy) > 10;
+            const limite = Math.max(55, cardEl.clientWidth * .14);
+            if (modoFoco && Math.abs(dx) >= limite && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                if (dx < 0) proximo();
+                else anterior();
+            }
+        });
+
+        cardEl.addEventListener('pointercancel', () => {
+            gestoCard = null;
+            ignorarCliqueDoGesto = true;
+        });
+
+        // Um deslize não deve revelar a resposta do card que acabou de chegar.
+        cardEl.addEventListener('click', (event) => {
+            if (ignorarCliqueDoGesto && event.detail > 0) {
+                ignorarCliqueDoGesto = false;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
 
         function normalizarLinkVideo(valor, plataforma) {
             if (typeof valor !== 'string' || !valor.trim()) return '';
