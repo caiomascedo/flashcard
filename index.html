@@ -1772,6 +1772,25 @@
         .auth-card button { width: 100%; margin-top: 18px; padding: 12px; border: 0; border-radius: 10px; background: #667eea; color: #fff; font-weight: 800; cursor: pointer; }
         .auth-message { min-height: 22px; margin-top: 12px; color: #ffb4b4 !important; }
         .logout-button { position: fixed; right: 14px; top: 14px; z-index: 9000; padding: 8px 12px; border: 1px solid #596184; border-radius: 9px; background: #151a31; color: #fff; cursor: pointer; }
+        /* Modo foco mantém o card e os controles essenciais. */
+        .recursos-card { width: 100%; max-width: 820px; margin: 16px 0; padding: 18px; border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: #c8d6e5; }
+        .recursos-card[hidden] { display: none; }
+        .recursos-card summary { cursor: pointer; color: #e8e8ff; font-weight: 600; }
+        .leitura-card { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin-top: 14px; }
+        .recursos-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+        .recursos-acoes a, .recursos-acoes button { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(120,170,255,.3); background: rgba(70,130,200,.12); color: #d5e6ff; text-decoration: none; font: inherit; font-size: .85em; cursor: pointer; }
+        .recursos-acoes :focus-visible, .recursos-card summary:focus-visible { outline: 2px solid #8abfff; outline-offset: 4px; }
+        .recursos-aviso { color: #8899aa; font-size: .85em; margin-top: 12px; }
+        body.modo-foco .explorer-panel, body.modo-foco .explorer-overlay,
+        body.modo-foco .panel-toggle-btn, body.modo-foco .main-content > .header-top h1,
+        body.modo-foco .main-content > .header-top .header-actions > button:not(#modoFocoBtn),
+        body.modo-foco #subtitulo, body.modo-foco .filtros-concluidos,
+        body.modo-foco .legenda-figuras, body.modo-foco .footer,
+        body.modo-foco .controles-secundarios,
+        body.modo-foco .controles-estudo > button:nth-child(n+5) { display: none !important; }
+        body.modo-foco .main-content { width: 100%; margin: 0; }
+        body.modo-foco .main-content > .header-top { justify-content: flex-end; }
+        body.modo-foco .flashcard { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -1840,6 +1859,7 @@
             <div class="header-top">
                 <h1 id="tituloPrincipal">📜 Flashcards</h1>
                 <div class="header-actions">
+                    <button id="modoFocoBtn" onclick="alternarModoFoco()" aria-pressed="false">🎯 Modo foco</button>
                     <button onclick="desfazerAcao()" title="Desfazer última ação">↩️ Desfazer</button>
                     <button onclick="abrirModelosJSON()" title="Ver modelos para adicionar conteúdo">📌 Modelos</button>
                     <button class="questoes-btn" onclick="abrirTelaQuestoes()" title="Responder questões de múltipla escolha">📝 Questões</button>
@@ -1874,6 +1894,19 @@
                     <div class="dica-clique"><i>👆 Clique para revelar a resposta + dica</i></div>
                 </div>
 
+                <section class="recursos-card" id="recursosCard" aria-label="Conteúdo complementar" hidden>
+                    <details id="leituraDetalhes">
+                        <summary>📖 Ler mais sobre este card</summary>
+                        <div class="leitura-card" id="leituraCard"></div>
+                    </details>
+                    <div class="recursos-acoes">
+                        <a id="youtubeCard" target="_blank" rel="noopener noreferrer">▶ Abrir no YouTube ↗</a>
+                        <a id="tiktokCard" target="_blank" rel="noopener noreferrer">♪ Abrir no TikTok ↗</a>
+                        <button type="button" onclick="editarRecursosCard()">✏️ Editar material</button>
+                    </div>
+                    <p class="recursos-aviso" id="recursosAviso"></p>
+                </section>
+
                 <div class="caminho-atual" id="caminhoAtual">
                     <span id="caminhoNome"></span><span id="filtroInfo" style="display:none;"> | 🔍 <span id="filtroNome"></span></span>
                 </div>
@@ -1886,7 +1919,7 @@
                     🎉 PARABÉNS! Você acertou TODOS os cards! Está pronto para a prova!
                 </div>
 
-                <div class="controles">
+                <div class="controles controles-estudo">
                     <button onclick="anterior()">◀ Anterior</button>
                     <button class="primario" onclick="proximo()">Próximo ▶</button>
                     <button class="sucesso" onclick="marcarAcertou()">✅ Acertou</button>
@@ -1899,7 +1932,7 @@
                     <button onclick="resetarProgresso()">🔄 Resetar</button>
                 </div>
 
-                <div class="controles" style="margin-top: 6px;">
+                <div class="controles controles-secundarios" style="margin-top: 6px;">
                     <button class="facil-btn" onclick="marcarNivel('facil')">🟢 Fácil</button>
                     <button class="medio-btn" onclick="marcarNivel('medio')">🟡 Médio</button>
                     <button class="dificil-btn" onclick="marcarNivel('dificil')">🔴 Difícil</button>
@@ -2427,7 +2460,7 @@
 
         function confirmarModal() {
             if (modalCallback) {
-                modalCallback();
+                if (modalCallback() === false) return;
             }
             fecharModal();
         }
@@ -2437,8 +2470,10 @@
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') fecharModal();
-            if (e.key === 'Enter' && modalOverlay.classList.contains('active')) {
+            if (!modalOverlay.classList.contains('active')) return;
+            if (e.key === 'Escape') { e.preventDefault(); fecharModal(); }
+            if (e.key === 'Enter' && !e.target.matches('textarea, button, a')) {
+                e.preventDefault();
                 confirmarModal();
             }
         });
@@ -2740,6 +2775,7 @@
                     pergunta: card.pergunta || '',
                     resposta: card.resposta || '',
                     dica: card.dica || '',
+                    ...recursosComplementares(card),
                     nivel: card.nivel || 'medio'
                 }));
 
@@ -3418,6 +3454,85 @@
         //  FUNÇÕES DE IMPORTAÇÃO
         // ================================================================
 
+        let modoFoco = false;
+
+        function alternarModoFoco() {
+            modoFoco = !modoFoco;
+            document.body.classList.toggle('modo-foco', modoFoco);
+            const botao = document.getElementById('modoFocoBtn');
+            botao.textContent = modoFoco ? '✕ Sair do foco' : '🎯 Modo foco';
+            botao.setAttribute('aria-pressed', String(modoFoco));
+            // Fecha o painel móvel para liberar a rolagem durante o foco.
+            if (modoFoco && window.innerWidth <= 900 && explorerOpen) toggleExplorer();
+            corrigirDeslocamentoHorizontal();
+        }
+
+        function normalizarLinkVideo(valor, plataforma) {
+            if (typeof valor !== 'string' || !valor.trim()) return '';
+            try {
+                const url = new URL(valor.trim());
+                const dominios = plataforma === 'youtube' ? ['youtube.com', 'youtu.be'] : ['tiktok.com'];
+                if (url.protocol !== 'https:' || url.username || url.password || url.port) return '';
+                return dominios.some(dominio => url.hostname === dominio || url.hostname.endsWith('.' + dominio)) ? url.href : '';
+            } catch { return ''; }
+        }
+
+        function recursosComplementares(item) {
+            return {
+                leitura: typeof item.leitura === 'string' ? item.leitura.trim() : '',
+                youtube: normalizarLinkVideo(item.youtube, 'youtube'),
+                tiktok: normalizarLinkVideo(item.tiktok, 'tiktok')
+            };
+        }
+
+        function atualizarRecursosCard(card) {
+            const painel = document.getElementById('recursosCard');
+            painel.hidden = !card || String(card.pergunta || '').startsWith('📁 Pasta:');
+            if (painel.hidden) { delete painel.dataset.indice; return; }
+            const detalhes = document.getElementById('leituraDetalhes');
+            const indice = String(getIndiceReal());
+            if (painel.dataset.indice !== indice) detalhes.open = false;
+            painel.dataset.indice = indice;
+            const recursos = recursosComplementares(card);
+            detalhes.hidden = !recursos.leitura;
+            document.getElementById('leituraCard').textContent = recursos.leitura;
+            for (const plataforma of ['youtube', 'tiktok']) {
+                const link = document.getElementById(plataforma + 'Card');
+                link.hidden = !recursos[plataforma];
+                if (recursos[plataforma]) link.href = recursos[plataforma];
+                else link.removeAttribute('href');
+            }
+            document.getElementById('recursosAviso').textContent = recursos.leitura || recursos.youtube || recursos.tiktok
+                ? 'Os vídeos abrem em outra aba. Seu estudo continua aqui.'
+                : 'Adicione uma leitura ou links de vídeos em Editar material ou importe pelo modelo JSON.';
+        }
+
+        function editarRecursosCard() {
+            if (!total) return;
+            const card = getCardAtual();
+            const recursos = recursosComplementares(card);
+            abrirModal('📖 Material complementar', `
+                <label for="materialLeitura">Leitura sobre o assunto:</label>
+                <textarea id="materialLeitura" placeholder="Explicação, exemplos e resumo...">${escaparHTML(recursos.leitura)}</textarea>
+                <label for="materialYoutube">Link do YouTube (opcional):</label>
+                <input type="url" id="materialYoutube" placeholder="https://www.youtube.com/watch?v=..." value="${escaparHTML(recursos.youtube)}">
+                <label for="materialTiktok">Link do TikTok (opcional):</label>
+                <input type="url" id="materialTiktok" placeholder="https://www.tiktok.com/@perfil/video/..." value="${escaparHTML(recursos.tiktok)}">
+            `, 'Salvar', () => {
+                const youtube = document.getElementById('materialYoutube').value.trim();
+                const tiktok = document.getElementById('materialTiktok').value.trim();
+                if ((youtube && !normalizarLinkVideo(youtube, 'youtube')) || (tiktok && !normalizarLinkVideo(tiktok, 'tiktok'))) {
+                    showToast('❌ Use links HTTPS válidos do YouTube ou TikTok.');
+                    return false;
+                }
+                salvarNoHistorico();
+                Object.assign(card, recursosComplementares({ leitura: document.getElementById('materialLeitura').value, youtube, tiktok }));
+                salvarEstado();
+                atualizarRecursosCard(card);
+                showToast('✅ Material complementar salvo.');
+            });
+        }
+
         function normalizarNivelImportado(valor) {
             const nivel = String(valor || 'medio')
                 .normalize('NFD')
@@ -3500,6 +3615,9 @@
                             pergunta: cabecalho.indexOf('pergunta'),
                             resposta: cabecalho.indexOf('resposta'),
                             dica: cabecalho.indexOf('dica'),
+                            leitura: cabecalho.indexOf('leitura'),
+                            youtube: cabecalho.indexOf('youtube'),
+                            tiktok: cabecalho.indexOf('tiktok'),
                             nivel: cabecalho.indexOf('nivel')
                         };
 
@@ -3533,6 +3651,7 @@
                 pastaPath: [item.concurso || 'Importado', item.materia || 'Geral', item.assunto || 'Geral', item.topico || 'Geral'],
                 pergunta: item.pergunta,
                 resposta: item.resposta,
+                ...recursosComplementares(item),
                 dica: item.dica || '💡 Leia com atenção o conteúdo.',
                 alternativas: item.alternativas || item.opcoes || [],
                 correta: item.correta || item.gabarito || '',
@@ -3569,6 +3688,7 @@
                         pastaPath: [item.concurso || 'Importado', item.materia || 'Geral', item.assunto || 'Geral', item.topico || 'Geral'],
                         pergunta: item.pergunta,
                         resposta: item.resposta,
+                        ...recursosComplementares(item),
                         dica: item.dica || '💡 Leia com atenção o conteúdo.',
                         alternativas: item.alternativas || item.opcoes || [],
                         correta: item.correta || item.gabarito || '',
@@ -3612,6 +3732,9 @@
                         pergunta: cabecalho.indexOf('pergunta'),
                         resposta: cabecalho.indexOf('resposta'),
                         dica: cabecalho.indexOf('dica'),
+                        leitura: cabecalho.indexOf('leitura'),
+                        youtube: cabecalho.indexOf('youtube'),
+                        tiktok: cabecalho.indexOf('tiktok'),
                         nivel: cabecalho.indexOf('nivel')
                     };
 
@@ -3642,6 +3765,7 @@
                         pastaPath: [item.concurso || 'Importado', item.materia || 'Geral', item.assunto || 'Geral', item.topico || 'Geral'],
                         pergunta: item.pergunta,
                         resposta: item.resposta,
+                        ...recursosComplementares(item),
                         dica: item.dica || '💡 Leia com atenção o conteúdo.',
                         alternativas: item.alternativas || item.opcoes || [],
                         correta: item.correta || item.gabarito || '',
@@ -3683,6 +3807,7 @@
                         topico: corrigirNomeImportado(item.topico || 'Geral'),
                         pergunta: item.pergunta || 'Pergunta não definida',
                         resposta: item.resposta || 'Resposta não definida',
+                        ...recursosComplementares(item),
                         dica: item.dica || '💡 Leia com atenção o conteúdo.',
                         pastaPath: Array.isArray(item.pastaPath) ? item.pastaPath.map(corrigirNomeImportado) : item.pastaPath,
                         alternativas: item.alternativas || [],
@@ -3730,6 +3855,7 @@
                 topico: item.topico || 'Geral',
                 pergunta: item.pergunta || 'Pergunta não definida',
                 resposta: item.resposta || 'Resposta não definida',
+                ...recursosComplementares(item),
                 dica: item.dica || '💡 Leia com atenção o conteúdo.',
                 nivel: normalizarNivelImportado(item.nivel || item.dificuldade)
             }));
@@ -3905,6 +4031,7 @@
 
         function atualizarCard() {
             if (total === 0) {
+                atualizarRecursosCard(null);
                 caminhoNome.textContent = '';
                 perguntaEl.textContent = '📭 Nenhum flashcard carregado.';
                 respostaEl.innerHTML = '';
@@ -3931,6 +4058,7 @@
 
             const card = getCardAtual();
             const idxReal = getIndiceReal();
+            atualizarRecursosCard(card);
 
             caminhoNome.textContent = `📂 ${card.concurso || 'Geral'} › ${card.materia || 'Geral'} › ${card.assunto || 'Geral'} › ${card.topico || 'Geral'}`;
 
@@ -5487,6 +5615,9 @@
     "pergunta": "Quando a vírgula deve ser usada em enumerações?",
     "resposta": "Para separar os itens da enumeração.",
     "dica": "💡 Em listas, a vírgula separa os itens.",
+    "leitura": "A vírgula separa elementos de uma enumeração. Exemplo: comprei livros, cadernos e canetas. Antes do último item, normalmente usamos a conjunção e.",
+    "youtube": "",
+    "tiktok": "",
     "nivel": "medio"
   }
 ]`;
@@ -5506,6 +5637,7 @@
 ]`;
             abrirModal('📌 Modelos para copiar', `
                 <p style="margin:0 0 10px;color:#7f8c9d;font-size:.86em;">Use sempre os colchetes <code>[ ]</code>, inclusive para uma única entrada. A hierarquia será: Concurso → Matéria → Assunto → Tópico.</p>
+                <p style="margin-bottom:10px;color:#aab;font-size:.86em;">Campos opcionais: <code>leitura</code> para texto complementar; <code>youtube</code> e <code>tiktok</code> para links HTTPS dos vídeos. Preencha os links ou deixe vazio. No 🎯 Modo foco, use Ler mais ou abra os vídeos diretamente.</p>
                 <label>Flashcard:</label>
                 <textarea id="modeloFlashcard" readonly>${escaparHTML(flashcard)}</textarea>
                 <button type="button" class="btn-secondary" style="margin:7px 0 15px;" onclick="copiarModelo('modeloFlashcard')">📋 Copiar modelo de flashcard</button>
@@ -5532,6 +5664,7 @@
         }
 
         function abrirTelaQuestoes() {
+            if (modoFoco) alternarModoFoco();
             appWrapper.style.display = 'none';
             telaQuestoes.classList.add('ativa');
             indiceQuestao = 0;
@@ -5889,6 +6022,7 @@
         // ================================================================
 
         document.addEventListener('keydown', (e) => {
+            if (e.defaultPrevented || modalOverlay.classList.contains('active') || (e.key !== 'Escape' && e.target.closest('button, a, summary'))) return;
             // Campos de texto precisam receber espaço, setas e Enter normalmente.
             const campoEmEdicao = e.target.matches('input, textarea, select, [contenteditable="true"]');
             if (campoEmEdicao) {
@@ -5915,6 +6049,7 @@
                 if (e.ctrlKey || e.metaKey) { e.preventDefault();
                     desfazerAcao(); }
             } else if (e.key === 'Escape') {
+                if (modoFoco) { e.preventDefault(); alternarModoFoco(); return; }
                 if (modoRevisao || modoFilaErros) { e.preventDefault(); sairDoModoEspecial(); return; }
                 if (explorerOpen) toggleExplorer();
                 if (modalOverlay.classList.contains('active')) fecharModal();
