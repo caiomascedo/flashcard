@@ -1845,6 +1845,7 @@
         .dica-navegacao-foco { display: block; margin-top: 10px; color: #8899aa; font-size: .75em; text-align: center; }
 
     </style>
+<link rel="stylesheet" href="caderno-integrado.css?v=1">
 </head>
 <body>
     <div class="auth-overlay" id="authOverlay">
@@ -1912,6 +1913,7 @@
             <div class="header-top">
                 <h1 id="tituloPrincipal">📜 Flashcards</h1>
                 <div class="header-actions">
+                    <button type="button" onclick="abrirCadernoIntegrado()">📓 Caderno completo</button>
                     <button id="modoFocoBtn" onclick="alternarModoFoco()" aria-pressed="false">🎯 Modo foco</button>
                     <button onclick="desfazerAcao()" title="Desfazer última ação">↩️ Desfazer</button>
                     <button onclick="abrirModelosJSON()" title="Ver modelos para adicionar conteúdo">📌 Modelos</button>
@@ -1998,7 +2000,7 @@
                     <button id="editarMaterialBtn" type="button" onclick="editarRecursosCard()">✏️ Editar material</button>
                     <button id="modeloVisualBtn" onclick="alternarModeloVisual(event)" title="Alternar aparência do card">🎨 Visual: Padrão</button>
                     <button id="copiarCardBtn" onclick="copiarCardAtualLimpo()">📋 Copiar</button>
-                    <button id="cadernoCardBtn" onclick="enviarCardAoCaderno()" title="Atalho: C">📓 Caderno (C)</button>
+                    <button id="cadernoCardBtn" onclick="enviarCardAoCaderno()" title="Atalho: C">📓 Anotar no Caderno (C)</button>
                     <button class="delete-card" onclick="apagarCardAtual()">🗑️ Card</button>
                     <button class="filtro-btn limpar" onclick="limparFiltro()" id="limparFiltroBtn" style="display:none;">✕ Filtro</button>
                 </div>
@@ -2075,6 +2077,7 @@
         const SUPABASE_URL = 'https://bgyfieezwztchyygrnqv.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bb6SVDmItQ8U5ErVtVTfuA_0srzQd2U';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        window.FlashcardCaderno = { client: supabaseClient };
         let usuarioAtual = null;
         let sincronizacaoTimer = null;
         let sincronizacaoEmAndamento = false;
@@ -4688,9 +4691,6 @@
             else { const area = document.createElement('textarea'); area.value = texto; document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove(); finalizar(); }
         }
 
-        let janelaCaderno = null;
-        const origemCaderno = 'https://caiomascedo.github.io';
-
         function idImportacaoCaderno(card) {
             const texto = [card.idBancoPMPI, card.id, card.concurso, card.materia, card.assunto, card.topico, card.pergunta, card.resposta].filter(v => v != null).join('|');
             let hash = 5381;
@@ -4714,23 +4714,7 @@
                 dica: card.dica || '',
                 nivel: card.nivel || 'medio'
             };
-            try {
-                if (janelaCaderno && !janelaCaderno.closed) {
-                    janelaCaderno.postMessage({ tipo: 'flashcards:importar', card: payload }, origemCaderno);
-                    janelaCaderno.focus();
-                    showToast('📓 Card enviado ao Caderno que já está aberto.');
-                    return;
-                }
-                const dados = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
-                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-                const destino = `https://caiomascedo.github.io/caderno/#importar-card=${dados}`;
-                janelaCaderno = window.open(destino, '_blank');
-                if (!janelaCaderno) window.location.href = destino;
-                showToast('📓 Caderno aberto. Os próximos cards serão enviados sem abrir outra aba.');
-            } catch (erro) {
-                console.error(erro);
-                showToast('❌ Não foi possível preparar o card para o Caderno.');
-            }
+            abrirCadernoIntegrado(payload);
         }
 
         function agendarFeynman() {
@@ -6248,7 +6232,7 @@
         // ================================================================
 
         document.addEventListener('keydown', (e) => {
-            if (e.defaultPrevented || modalOverlay.classList.contains('active') || (e.key !== 'Escape' && e.target.closest('button, a, summary'))) return;
+            if (document.getElementById('cadernoIntegradoDialog').open || e.defaultPrevented || modalOverlay.classList.contains('active') || (e.key !== 'Escape' && e.target.closest('button, a, summary'))) return;
             // Campos de texto precisam receber espaço, setas e Enter normalmente.
             const campoEmEdicao = e.target.matches('input, textarea, select, [contenteditable="true"]');
             if (campoEmEdicao) {
@@ -6416,6 +6400,17 @@
         });
     </script>
 
+<dialog id="cadernoIntegradoDialog" aria-labelledby="cadernoIntegradoTitulo">
+    <div class="caderno-integrado-barra">
+        <strong id="cadernoIntegradoTitulo">📓 Caderno de erros</strong>
+        <button type="button" id="cadernoIntegradoExpandir" aria-pressed="false">⛶ Maximizar</button>
+        <button type="button" id="cadernoIntegradoFechar">← Voltar aos flashcards</button>
+    </div>
+    <p id="cadernoIntegradoStatus" role="status">Carregando caderno…</p>
+    <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
+    <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
+</dialog>
+<script src="caderno-integrado.js?v=1"></script>
 </body>
 </html>
 

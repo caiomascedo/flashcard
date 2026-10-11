@@ -1,0 +1,1832 @@
+
+
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Caderno de Erros · Completo + Nuvem</title>
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/Pptkggqw/icone.png">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/Pptkggqw/icone.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+        
+        body.dark-mode { background: #1a1a2e; color: #e2e8f0; }
+        body.dark-mode .editor { background: #16213e; color: #e2e8f0; border-color: #2d3748; }
+        body.dark-mode .bg-white { background: #1e293b !important; }
+        body.dark-mode .bg-gray-50 { background: #0f172a !important; }
+        body.dark-mode .bg-gray-100 { background: #1e293b !important; }
+        body.dark-mode .btn { background: #334155; color: #e2e8f0; border-color: #475569; }
+        body.dark-mode .border { border-color: #334155 !important; }
+        body.dark-mode .text-gray-700 { color: #cbd5e1; }
+        body.dark-mode .text-gray-500 { color: #94a3b8; }
+        body.dark-mode .bg-gray-200 { background: #334155; }
+        body.dark-mode .shadow-md { box-shadow: none; }
+        body.dark-mode .assunto-chip { background: #334155; color: #e2e8f0; }
+        body.dark-mode .assunto-chip.active { background: #22c55e; color: white; }
+        body.dark-mode .flashcard-item { background: #0f172a; }
+        body.dark-mode .text-toolbar { background: #1e293b; border-color: #475569; }
+        body.dark-mode .text-toolbar button { background: #334155; color: #e2e8f0; }
+        
+        .editor {
+            background: white; color: black; border-radius: 1rem; min-height: 55vh;
+            outline: none; font-family: system-ui; line-height: 1.5;
+            overflow: auto; font-size: 18px; padding: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .editor:focus { box-shadow: 0 0 0 2px #22c55e; }
+        .editor img { max-width: 100%; height: auto; cursor: pointer; display: block; margin: 6px auto; border-radius: 6px; transition: outline 0.1s; }
+        .editor img.img-selected { outline: 3px solid #22c55e; }
+        .editor img.img-left { margin: 6px 0; float: left; margin-right: 10px; }
+        .editor img.img-right { margin: 6px 0; float: right; margin-left: 10px; }
+        .editor img.img-center { margin: 6px auto; display: block; }
+        .editor.expanded {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000;
+            width: 100%; height: 100vh; border-radius: 0; margin: 0; padding: 1rem;
+            background: white;
+        }
+        body.dark-mode .editor.expanded { background: #16213e; }
+        .close-expand { position: fixed; top: 10px; right: 10px; z-index: 1001; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 30px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
+        .btn { background: #f8fafc; padding: 0.25rem 0.7rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; font-size: 0.85rem; border: 1px solid #e2e8f0; color: #334155; touch-action: manipulation; }
+        .btn:active { transform: scale(0.96); background: #e2e8f0; }
+        .assunto-chip { background: #e2e8f0; border-radius: 2rem; padding: 0.2rem 0.8rem; font-size: 0.8rem; cursor: pointer; display: inline-block; touch-action: manipulation; }
+        .assunto-chip.active { background: #22c55e; color: white; }
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 6px 12px; border-radius: 30px; font-size: 0.75rem; z-index: 1001; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        .bottom-bar { 
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; 
+            padding: 8px 16px; display: flex; justify-content: center; gap: 20px; z-index: 20; 
+        }
+        body.dark-mode .bottom-bar { background: #1e293b; border-color: #334155; }
+        .bottom-bar button { background: none; border: none; padding: 6px 12px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; color: #4b5563; touch-action: manipulation; }
+        body.dark-mode .bottom-bar button { color: #94a3b8; }
+        .bottom-bar button:active { background: #e2e8f0; }
+        .pb-16 { padding-bottom: 4rem; }
+        
+        .img-toolbar { 
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); 
+            background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); 
+            display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; z-index: 1002; 
+            border: 1px solid #ddd; max-width: 95vw;
+        }
+        body.dark-mode .img-toolbar { background: #1e293b; border-color: #475569; }
+        .img-toolbar .toolbar-group {
+            display: flex; gap: 4px; align-items: center;
+            border-right: 1px solid #e2e8f0; padding-right: 8px; margin-right: 2px;
+        }
+        body.dark-mode .img-toolbar .toolbar-group { border-color: #475569; }
+        .img-toolbar .toolbar-group:last-child { border-right: none; padding-right: 0; }
+        .img-toolbar button { 
+            background: #f1f5f9; border: none; border-radius: 8px; 
+            padding: 6px 10px; font-size: 13px; font-weight: 500; 
+            cursor: pointer; touch-action: manipulation; color: #334155;
+            transition: all 0.1s;
+        }
+        body.dark-mode .img-toolbar button { background: #334155; color: #e2e8f0; }
+        .img-toolbar button:active, .img-toolbar button.active { background: #22c55e; color: white; transform: scale(0.95); }
+        .img-toolbar .lbl { font-size: 10px; color: #94a3b8; align-self: center; }
+        
+        .crop-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .crop-container { background: white; border-radius: 16px; padding: 16px; max-width: 90vw; max-height: 90vh; }
+        .crop-image { max-width: 80vw; max-height: 60vh; }
+        .recorte-botoes { margin-top: 16px; display: flex; gap: 12px; justify-content: center; }
+        .recorte-botoes button { padding: 10px 20px; border-radius: 40px; font-size: 16px; cursor: pointer; }
+        
+        .card-inner { transition: transform 0.3s ease; transform-style: preserve-3d; }
+        .flipped { transform: rotateY(180deg); }
+        .back, .front { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 1rem; }
+        .back { transform: rotateY(180deg); }
+        .study-shell { background: linear-gradient(145deg, #eefbf3, #eef4ff); border: 1px solid #bbf7d0; }
+        .study-progress { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .study-progress > div { height: 100%; background: linear-gradient(90deg, #22c55e, #3b82f6); transition: width .35s ease; }
+        .study-front { background: linear-gradient(145deg, #ffffff, #f1f5f9); border: 2px solid #cbd5e1; box-shadow: 0 14px 35px rgba(15,23,42,.10); }
+        .study-back { background: linear-gradient(145deg, #dcfce7, #dbeafe); border: 2px solid #22c55e; box-shadow: 0 16px 38px rgba(34,197,94,.18); }
+        .study-label { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #64748b; margin-bottom: .7rem; }
+        .study-answer { animation: answer-pop .35s ease both; }
+        .study-feedback { animation: feedback-pop .42s ease both; font-size: 1.1rem; font-weight: 800; text-align: center; padding: .75rem; border-radius: 1rem; margin-top: .7rem; }
+        .study-feedback.hard { background: #fee2e2; color: #b91c1c; }
+        .study-feedback.medium { background: #ffedd5; color: #c2410c; }
+        .study-feedback.easy { background: #dcfce7; color: #15803d; }
+        .study-rate { transition: transform .15s ease, filter .15s ease; box-shadow: 0 8px 18px rgba(15,23,42,.12); }
+        .study-rate:active { transform: scale(.96); filter: brightness(.96); }
+        @keyframes answer-pop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+        @keyframes feedback-pop { 0% { opacity: 0; transform: scale(.86); } 65% { opacity: 1; transform: scale(1.04); } 100% { transform: scale(1); } }
+        .drag-item { touch-action: none; user-select: none; }
+        .flashcard-item { background: #f8fafc; border-radius: 12px; padding: 8px; margin-bottom: 6px; border-left: 3px solid #22c55e; }
+        body.dark-mode .flashcard-item { background: #0f172a; }
+        .flashcard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .revisao-badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; background: #e2e8f0; color: #475569; }
+        body.dark-mode .revisao-badge { background: #334155; color: #94a3b8; }
+        .revisao-badge.urgent { background: #fee2e2; color: #dc2626; }
+        body.dark-mode .revisao-badge.urgent { background: #7f1d1d; color: #fca5a5; }
+        .revisao-badge.today { background: #fef3c7; color: #d97706; }
+        body.dark-mode .revisao-badge.today { background: #78350f; color: #fbbf24; }
+        .search-highlight { background-color: #fef08a; }
+        .search-highlight-current { background-color: #f59e0b !important; color: #111827; outline: 2px solid #ea580c; border-radius: 2px; }
+        body.dark-mode .search-highlight { background-color: #854d0e; color: #fef08a; }
+        
+        #editor ul,
+        #editor ol { padding-left: 2rem; margin: 4px 0 4px 0; }
+        #editor li  { margin: 3px 0; line-height: 1.7; }
+        #editor ul              { list-style: none; }
+        #editor ul > li::before { content: "·"; font-size: 1.4em; line-height: 0; vertical-align: -0.1em; margin-right: 0.45em; color: #334155; font-weight: bold; }
+        #editor ul ul           { list-style: none; padding-left: 2rem; }
+        #editor ul ul > li::before { content: "◦"; font-size: 1.1em; }
+        #editor ul ul ul        { list-style: none; padding-left: 2rem; }
+        #editor ul ul ul > li::before { content: "▪"; font-size: 0.85em; }
+        #editor ol              { list-style-type: decimal; }
+        #editor ol ol           { list-style-type: lower-alpha; padding-left: 2rem; }
+        #editor ol ol ol        { list-style-type: lower-roman; padding-left: 2rem; }
+
+        table { border-collapse: collapse; width: 100%; margin: 8px 0; background: white; }
+        body.dark-mode table { background: #1e293b; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+        body.dark-mode th, body.dark-mode td { border-color: #475569; }
+        th { background: #f1f5f9; font-weight: bold; }
+        body.dark-mode th { background: #334155; }
+        
+        .text-toolbar { 
+            position: fixed; 
+            background: white; 
+            border-radius: 40px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+            display: flex; 
+            gap: 4px; 
+            padding: 6px 10px; 
+            z-index: 1002; 
+            border: 1px solid #ddd;
+            max-width: 90vw;
+            flex-wrap: nowrap;
+            transition: all 0.1s;
+        }
+        body.dark-mode .text-toolbar { background: #1e293b; border-color: #475569; }
+        .text-toolbar button { 
+            background: #f1f5f9; border: none; border-radius: 30px; 
+            padding: 4px 8px; font-size: 11px; font-weight: 500; 
+            cursor: pointer; touch-action: manipulation; transition: all 0.1s; color: #334155;
+        }
+        body.dark-mode .text-toolbar button { background: #334155; color: #e2e8f0; }
+        .text-toolbar button:active { transform: scale(0.95); background: #e2e8f0; }
+        .color-btn { width: 28px; text-align: center; font-size: 11px; padding: 4px 6px; }
+        
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
+        .section-header h2 { margin: 0; }
+        .toggle-btn { font-size: 18px; font-weight: bold; cursor: pointer; padding: 0 8px; }
+        .section-content { transition: all 0.2s ease; overflow: hidden; }
+        .section-content.minimized { display: none; }
+        .crono-tarefa { background: #f8fafc; border-left: 4px solid #22c55e; margin-bottom: 8px; padding: 6px 10px; border-radius: 12px; }
+        body.dark-mode .crono-tarefa { background: #0f172a; }
+        
+        .mark-red { background-color: #fee2e2; }
+        body.dark-mode .mark-red { background-color: #7f1d1d; color: #fca5a5; }
+        .mark-orange { background-color: #ffedd5; }
+        body.dark-mode .mark-orange { background-color: #78350f; color: #fbbf24; }
+        .mark-purple { background-color: #f3e8ff; }
+        body.dark-mode .mark-purple { background-color: #4c1d95; color: #d8b4fe; }
+        .mark-yellow { background-color: #fef08a; }
+        body.dark-mode .mark-yellow { background-color: #713f12; color: #fef9c3; }
+        .mark-green { background-color: #bbf7d0; }
+        body.dark-mode .mark-green { background-color: #14532d; color: #dcfce7; }
+        .mark-blue { background-color: #bfdbfe; }
+        body.dark-mode .mark-blue { background-color: #1e3a8a; color: #dbeafe; }
+
+        @media (max-width: 640px) {
+            .text-toolbar { left: 8px !important; right: 8px !important; top: auto !important; bottom: 10px !important; max-width: none; width: auto; flex-wrap: wrap; justify-content: center; border-radius: 18px; }
+            .text-toolbar button { min-width: 30px; min-height: 30px; }
+        }
+
+        #autoSaveIndicator {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; color: #94a3b8;
+            transition: all 0.3s;
+        }
+        #autoSaveIndicator .dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
+            transition: background 0.3s;
+        }
+        #autoSaveIndicator.saving .dot { background: #f59e0b; animation: pulse 0.6s infinite; }
+        #autoSaveIndicator.saved .dot { background: #22c55e; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        #wordCount { font-size: 11px; color: #94a3b8; }
+        
+        .progress-bar {
+            width: 100%;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+        }
+        body.dark-mode .progress-bar { background-color: #334155; }
+        .progress-fill {
+            background-color: #22c55e;
+            width: 0%;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .tag-item {
+            display: inline-block;
+            background: #e2e8f0;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 10px;
+            margin: 2px 2px;
+            cursor: pointer;
+        }
+        body.dark-mode .tag-item { background: #334155; }
+        .tag-item:hover { background: #22c55e; color: white; }
+        
+        .confirm-input {
+            font-family: monospace;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        
+        .login-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .login-modal.open {
+            display: flex;
+        }
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        body.dark-mode .login-card {
+            background: #1e293b;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+        }
+        body.dark-mode .login-card input {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #modalEstudo { display: none; }
+        #modalEstudo.ativo { display: flex; }
+        #modalFlashcard { display: none; }
+        #modalFlashcard.ativo { display: flex; }
+        #modalConfirmacao { display: none; }
+        #modalConfirmacao.ativo { display: flex; }
+        #modalCronograma { display: none; }
+        #modalCronograma.ativo { display: flex; }
+        #modalBusca { display: none; }
+        #modalBusca.ativo { display: flex; }
+
+        #pdfOverlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+        }
+        #pdfOverlay.ativo { display: flex; }
+        #pdfOverlay .pdf-spinner {
+            width: 48px; height: 48px;
+            border: 5px solid #fff3;
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #pdfOverlay p { color: white; font-size: 15px; font-weight: 600; }
+        
+        .editor p, .editor div { margin: 0.2em 0; line-height: 1.5; }
+        .editor img { margin: 8px auto; }
+        
+        .editor h1, .editor h2, .editor h3 {
+            margin: 16px 0 8px 0;
+            font-weight: bold;
+        }
+        .editor h1 { font-size: 28px; }
+        .editor h2 { font-size: 24px; }
+        .editor h3 { font-size: 20px; }
+        
+        .pendencia-item {
+            background: #fef3c7;
+            border-left: 3px solid #f59e0b;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pendencia-item:hover { background: #fde68a; transform: translateX(3px); }
+        body.dark-mode .pendencia-item { background: #78350f; border-left-color: #fbbf24; }
+        body.dark-mode .pendencia-item:hover { background: #92400e; }
+        
+        .stats-clickable {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stats-clickable:hover {
+            transform: scale(1.02);
+            background: #e2e8f0 !important;
+        }
+        body.dark-mode .stats-clickable:hover {
+            background: #334155 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-gray-800 min-h-screen pb-16">
+
+<div id="pdfOverlay">
+    <div class="pdf-spinner"></div>
+    <p>Gerando PDF... aguarde</p>
+</div>
+
+<div class="bg-white border-b p-3 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-10 shadow-sm">
+    <h1 class="text-xl font-bold text-green-700">📘 Caderno de Erros</h1>
+    <div class="flex gap-2 items-center flex-wrap">
+        <button id="btnCronograma" class="bg-gray-200 px-2 py-1 rounded text-xs">📅</button>
+        <button id="btnExportar" class="bg-gray-200 px-2 py-1 rounded text-xs">📁</button>
+        <button id="btnImportar" class="bg-gray-200 px-2 py-1 rounded text-xs">📂</button>
+        <button id="btnDarkMode" class="bg-gray-200 px-2 py-1 rounded text-xs">🌙</button>
+        <button id="btnLembrete" class="bg-amber-500 text-white px-2 py-1 rounded text-xs">⏰</button>
+        <button id="btnComandoVoz" class="bg-purple-600 text-white px-2 py-1 rounded text-xs">🎤 Voz</button>
+        <button id="btnIrPastas" class="bg-green-600 text-white px-2 py-1 rounded text-xs">📁 Pastas</button>
+        <div id="statsHeader" class="bg-gray-200 px-3 py-1 rounded-full text-sm font-semibold stats-clickable" title="Clique para revisar todos os flashcards pendentes">0 pend.</div>
+        <div id="userAvatar" class="user-avatar bg-green-500 cursor-pointer"><span id="avatarIcon" class="text-white text-sm">👤</span></div>
+    </div>
+</div>
+
+<div id="loginModal" class="login-modal">
+    <div class="login-card">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-green-600">🔐 Acessar Nuvem</h2><button id="closeLoginModal" class="text-gray-400 text-2xl">&times;</button></div>
+        <div id="userInfo" class="hidden mb-4 p-3 bg-green-50 rounded-xl"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-lg">👤</div><div><div id="userNameDisplay" class="font-semibold"></div><div class="text-xs text-gray-500">Logado</div></div></div></div>
+        <div id="loginForm">
+            <button id="loginGoogleBtn" class="w-full bg-blue-600 text-white py-2 rounded-xl mb-3 flex items-center justify-center gap-2">🔐 Entrar com Google</button>
+            <div class="relative my-3 text-center"><span class="bg-gray-200 px-2 text-xs">ou</span></div>
+            <input type="email" id="modalEmail" placeholder="Email" class="w-full p-2 border rounded-lg mb-2">
+            <input type="password" id="modalSenha" placeholder="Senha" class="w-full p-2 border rounded-lg mb-3">
+            <button id="loginEmailBtn" class="w-full bg-green-600 text-white py-2 rounded-xl mb-2">Entrar</button>
+            <button id="signupBtn" class="w-full bg-purple-600 text-white py-2 rounded-xl">Criar Conta</button>
+        </div>
+        <div id="loggedInActions" class="hidden"><button id="syncNowBtn" class="w-full bg-blue-600 text-white py-2 rounded-xl mb-2">☁️ Sincronizar Agora</button><button id="logoutBtn" class="w-full bg-red-500 text-white py-2 rounded-xl">Sair</button></div>
+    </div>
+</div>
+
+<div class="flex flex-col md:flex-row gap-4 p-4">
+    <div class="flex-1 bg-white rounded-2xl shadow-md border p-4">
+        <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+            <div class="text-sm"><span class="text-gray-500">🏛️ Concurso:</span> <span id="nomeConcurso" class="font-semibold">—</span><br><span class="text-gray-500">📚 Matéria:</span> <span id="nomeMateria" class="font-semibold">—</span><br><span class="text-gray-500">📌 Assunto:</span> <span id="nomeAssunto" class="font-semibold">—</span></div>
+            <div class="flex gap-1 flex-wrap">
+                <button class="btn" id="btnBold"><b>N</b></button>
+                <button class="btn" id="btnItalic"><i>I</i></button>
+                <button class="btn" id="btnUnderline">S</button>
+                <button class="btn" id="btnUndo">↩️</button>
+                <button class="btn" id="btnRedo">↪️</button>
+                <button id="btnLimparCaderno" class="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-xs">🗑️</button>
+                <button id="btnCriarFlashcard" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">✨</button>
+                <button id="btnExpandir" class="btn">⤢</button>
+                <button id="btnFonteMenos" class="btn">A-</button>
+                <span id="fonteTamanho" class="text-xs w-6 text-center">18</span>
+                <button id="btnTitulo" class="btn bg-yellow-100">H</button>
+                <button id="btnFonteMais" class="btn">A+</button>
+                <button id="btnListaNum" class="btn bg-yellow-100">1≡</button>
+                <button id="btnListaItem" class="btn bg-yellow-50">•≡</button>
+                <button id="btnIndent" class="btn">→|</button>
+                <button id="btnOutdent" class="btn">|←</button>
+                <button id="btnCentralizar" class="btn bg-green-100">⤢ Cen</button>
+                <button id="btnCriarTabela" class="btn bg-indigo-100">📊</button>
+                <button id="btnEscolherFoto" class="btn bg-blue-100">🖼️</button>
+                <button id="btnGerarPDF" class="btn bg-red-100">📄</button>
+                <button id="btnGerarPDFAssunto" class="btn bg-red-100" title="PDF de todo o assunto">📚 PDF</button>
+                <button id="btnBuscar" class="btn bg-purple-100">🔎</button>
+                <button id="btnSincDrive" class="btn bg-green-100" title="Backup local">💾</button>
+            </div>
+        </div>
+        <div id="editor" class="editor p-4 border" contenteditable="true"></div>
+        <div class="flex justify-between items-center mt-2 px-1"><div id="autoSaveIndicator"><div class="dot"></div><span id="autoSaveText">salvo</span></div><div id="wordCount">0 palavras</div></div>
+        <div class="text-xs text-gray-400 mt-1">📸 Toque na imagem | 🖍️ Selecione texto | 📊 Tabela | <b>1.</b> + espaço = lista numerada | <b>-</b> + espaço = marcadores | 🎹 Ctrl+F = Flashcard | Ctrl+P = Buscar | Ctrl+Alt+E = Expandir | Esc = Sair | 🔢 1,2,3,4 = Responder flashcards</div>
+    </div>
+
+    <div class="w-full md:w-80 bg-white rounded-2xl shadow-md border p-4 flex flex-col gap-3">
+        <div class="bg-green-50 rounded-lg p-2">
+            <div class="section-header" data-section="estatisticas"><h3 class="font-bold text-green-700 text-sm">📊 Estatísticas</h3><span class="toggle-btn" data-section="estatisticas">−</span></div>
+            <div id="sectionEstatisticas" class="section-content text-xs space-y-1">
+                <div>✅ Revisões hoje: <span id="revisoesHoje" class="font-semibold">0</span></div>
+                <div>🔥 Sequência: <span id="streak" class="font-semibold">0</span> dias</div>
+                <div>📚 Total flashcards: <span id="totalFlashcards" class="font-semibold">0</span></div>
+                <div class="progress-bar mt-1"><div id="progressoEstudo" class="progress-fill" style="width:0%"></div></div>
+                <div id="progressoTexto" class="text-center text-gray-500">0% concluído</div>
+            </div>
+        </div>
+        <div id="pendenciasContainer" class="bg-yellow-50 rounded-lg p-2 hidden">
+            <div class="section-header" data-section="pendencias"><h3 class="font-bold text-yellow-700 text-sm">⚠️ Pendências por matéria</h3><span class="toggle-btn" data-section="pendencias">−</span></div>
+            <div id="sectionPendencias" class="section-content"><div id="listaPendencias" class="text-xs space-y-1 max-h-56 overflow-y-auto"></div></div>
+        </div>
+
+        <div id="painelPastas" class="bg-gray-50 rounded-lg p-2 border" style="scroll-margin-top:80px">
+            <div id="navBreadcrumb" class="flex flex-wrap items-center gap-1 text-xs text-gray-500 mb-2"></div>
+            <div class="flex justify-between items-center mb-2">
+                <h2 id="navTitulo" class="font-bold text-green-700 text-sm">🏛️ Concursos</h2>
+                <button id="btnNovoItem" class="bg-green-600 text-white w-6 h-6 rounded-full text-lg leading-none">+</button>
+            </div>
+            <div id="navLista" class="space-y-1 max-h-64 overflow-y-auto"></div>
+        </div>
+
+        <button id="btnEstudar" class="mt-1 bg-purple-600 text-white py-1 rounded-full text-sm">📖 Estudar (assunto atual)</button>
+        <div><div class="section-header" data-section="flashcards"><h2 class="font-semibold text-gray-700 text-sm">🎴 Flashcards</h2><span class="toggle-btn" data-section="flashcards">−</span></div><div class="section-content" id="sectionFlashcards"><div id="previewFlashcard" class="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-1 max-h-48 overflow-y-auto"></div></div></div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <input type="file" id="inputImportar" accept=".json" class="hidden">
+</div>
+
+<div id="modalFlashcard" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-5"><h3 class="text-lg font-bold text-green-700 mb-2">✏️ Flashcard</h3><input type="text" id="inputPergunta" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Pergunta"><textarea id="inputResposta" rows="3" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Resposta"></textarea><input type="text" id="inputTags" class="w-full bg-gray-100 rounded-xl p-2 mb-3 border" placeholder="Tags (separadas por vírgula)"><div class="flex gap-2"><button id="modalCancelar" class="flex-1 bg-gray-300 py-2 rounded-xl">Cancelar</button><button id="modalSalvar" class="flex-1 bg-green-600 text-white py-2 rounded-xl">Salvar</button></div></div></div>
+<div id="modalConfirmacao" class="fixed inset-0 bg-black/70 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-5"><h3 class="text-lg font-bold text-red-600 mb-2">⚠️ Atenção!</h3><p class="text-sm mb-3">Digite <strong class="text-red-600">CONFIRMAR</strong> para limpar o caderno:</p><input type="text" id="confirmacaoInput" class="w-full bg-gray-100 rounded-xl p-2 mb-3 border confirm-input" placeholder="CONFIRMAR"><div class="flex gap-2"><button id="confirmacaoCancelar" class="flex-1 bg-gray-300 py-2 rounded-xl">Cancelar</button><button id="confirmacaoOk" class="flex-1 bg-red-600 text-white py-2 rounded-xl">Limpar</button></div></div></div>
+<div id="modalEstudo" class="fixed inset-0 bg-black/80 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full max-h-[92vh] overflow-y-auto p-5 relative"><button id="fecharEstudo" class="absolute top-2 right-3 text-gray-500 text-xl">&times;</button><div id="estudoConteudo" class="min-h-[300px] flex flex-col"></div><button id="btnResponderVoz" class="mt-3 bg-purple-600 text-white py-2 rounded-xl text-sm w-full hidden">🎤 Responder por Voz</button></div></div>
+<div id="modalCronograma" class="fixed inset-0 bg-black/70 items-center justify-center z-50 p-4 overflow-y-auto"><div class="bg-white rounded-2xl max-w-2xl w-full p-5 max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-green-700">📅 Cronograma</h2><button id="fecharCronograma" class="text-gray-500 text-2xl">&times;</button></div><div id="listaTarefas" class="space-y-2 mb-4"></div><div class="border-t pt-4"><h3 class="font-semibold mb-2">➕ Nova Tarefa</h3><div class="flex flex-wrap gap-2"><input type="time" id="novaHora" class="bg-gray-100 rounded-xl p-2 border" value="08:00"><input type="text" id="novaDesc" placeholder="Descrição" class="flex-1 bg-gray-100 rounded-xl p-2 border"><select id="novoTipo" class="bg-gray-100 rounded-xl p-2 border"><option value="flashcard">📇 Flashcard</option><option value="questoes">✏️ Questões</option><option value="correcao">📝 Correção</option><option value="revisao">🔄 Revisão</option><option value="pausa">☕ Pausa</option></select><button id="btnAdicionarTarefa" class="bg-green-600 text-white px-4 py-2 rounded-xl">+</button></div></div></div></div>
+<div id="modalBusca" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-4"><h3 class="text-lg font-bold text-green-700 mb-2">🔍 Buscar nesta página</h3><input type="search" id="buscaInput" class="w-full bg-gray-100 rounded-xl p-3 mb-2 border text-base" placeholder="Digite uma palavra ou frase..."><div id="buscaStatus" class="text-xs text-gray-500 mb-3 min-h-4">Digite e toque em Buscar.</div><div class="flex gap-2 mb-2"><button id="buscaExecutar" class="flex-1 bg-blue-600 text-white py-2 rounded-xl">Buscar</button><button id="buscaFechar" class="flex-1 bg-gray-300 py-2 rounded-xl">Fechar</button><button id="buscaLimpar" class="flex-1 bg-orange-500 text-white py-2 rounded-xl">Limpar</button></div><div class="flex gap-2"><button id="buscaAnterior" class="flex-1 bg-purple-600 text-white py-2 rounded-xl">◀ Anterior</button><button id="buscaProxima" class="flex-1 bg-purple-600 text-white py-2 rounded-xl">Próxima ▶</button></div></div></div>
+
+<div id="toast" class="toast">💾</div>
+
+<script type="module">
+// ==================== SUPABASE ====================
+const integrado = window.parent !== window && location.origin === window.parent.location.origin && !!window.parent.FlashcardCaderno;
+const createClient = integrado ? null : (await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.53.0/+esm')).createClient;
+
+// Preencha estes dois valores em Project Settings > Data API no Supabase.
+// A publishable key pode ficar no navegador; nunca use secret/service_role aqui.
+const SUPABASE_URL = 'https://bgyfieezwztchyygrnqv.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bb6SVDmItQ8U5ErVtVTfuA_0srzQd2U';
+const supabaseOk = SUPABASE_URL.startsWith('https://') && !SUPABASE_PUBLISHABLE_KEY.startsWith('SUA_');
+const supabase = integrado ? window.parent.FlashcardCaderno.client : (supabaseOk ? createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null);
+function toast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 2000); }
+function avisarPronto() {
+    if (integrado && sincronizacaoInicialConcluida) {
+        document.body.inert = false;
+        window.parent.postMessage({ tipo: 'caderno:pronto' }, location.origin);
+    }
+}
+if (integrado) document.body.inert = true;
+
+let sincronizacaoInicialConcluida = false;
+function registrarAlteracaoLocal() {
+    // Durante a abertura, o aplicativo ainda está escolhendo entre a cópia
+    // local e a cópia da nuvem. Só marque como edição depois dessa etapa para
+    // não substituir acidentalmente um backup mais novo do Supabase.
+    if (!sincronizacaoInicialConcluida) return;
+    localStorage.setItem('caderno_local_updated_at', new Date().toISOString());
+    window.dispatchEvent(new CustomEvent('caderno:alterado'));
+}
+
+// ==================== CÓDIGO PRINCIPAL ====================
+(function(){
+    function abrirModal(id)  { document.getElementById(id).classList.add('ativo'); }
+    function fecharModal(id) { document.getElementById(id).classList.remove('ativo'); }
+
+    window.CadernoIntegrado = {
+        importar: async card => { if (!sincronizacaoInicialConcluida) throw Error('Aguarde a sincronização do caderno.'); salvarEditor(); await importarFlashcardRecebido(card); },
+        salvar: () => { if (sincronizacaoInicialConcluida) salvarEditor(); },
+        migrarImagens: () => migrarImagensBase64Existentes(),
+        recarregar: () => {
+            dados = JSON.parse(localStorage.getItem('dados_concursos')) || { concursos: [], flashcards: [] };
+            cronograma = JSON.parse(localStorage.getItem('cronograma')) || [];
+            migrarDados();
+            concursoAtualId = dados.concursos[0]?.id || null;
+            const concurso = dados.concursos[0];
+            materiaAtualId = concurso?.materiaAtualId || concurso?.materias[0]?.id || null;
+            const materia = concurso?.materias.find(m => m.id == materiaAtualId);
+            assuntoAtualId = materia?.assuntoAtualId || materia?.assuntos[0]?.id || null;
+            const assunto = materia?.assuntos.find(a => a.id == assuntoAtualId);
+            paginaAtualId = assunto?.paginaAtualId || assunto?.paginas[0]?.id || null;
+            navLevel = 'concursos';
+            renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias();
+        }
+    };
+    let dados = JSON.parse(localStorage.getItem('dados_concursos')) || { concursos: [], flashcards: [] };
+    let concursoAtualId = null, materiaAtualId = null, assuntoAtualId = null;
+    let studyQueue = [], studyIdx = 0, studySessionTotal = 0, respostaEmAndamento = false;
+    let undoStack = [], redoStack = [];
+    let cronograma = JSON.parse(localStorage.getItem('cronograma')) || [];
+    let cropper = null;
+    let editandoFlashcardId = null;
+    let textToolbar = null;
+    let lembreteAtivo = false;
+    const STORAGE_BUCKET = 'caderno-imagens';
+
+    async function comprimirImagem(arquivoOuBlob) {
+        const bitmap = await createImageBitmap(arquivoOuBlob);
+        const limite = 1600;
+        const escala = Math.min(1, limite / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+        canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close();
+        return await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Falha ao comprimir imagem')), 'image/webp', 0.82));
+    }
+
+    async function enviarImagemAoStorage(arquivoOuBlob) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Entre na sua conta antes de adicionar imagens.');
+        const blob = await comprimirImagem(arquivoOuBlob);
+        const caminho = `${user.id}/${Date.now()}-${crypto.randomUUID()}.webp`;
+        const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(caminho, blob, { contentType: 'image/webp', upsert: false });
+        if (error) throw error;
+        const { data, error: urlError } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(caminho, 60 * 60 * 24 * 7);
+        if (urlError) throw urlError;
+        return { caminho, url: data.signedUrl };
+    }
+
+    async function renovarUrlsImagens(container) {
+        for (const img of container.querySelectorAll('img[data-storage-path]')) {
+            const { data } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(img.dataset.storagePath, 60 * 60 * 24 * 7);
+            if (data?.signedUrl) img.src = data.signedUrl;
+        }
+    }
+
+    async function migrarImagensBase64Existentes() {
+        if (localStorage.getItem('imagens_storage_migradas_v1') === 'ok') return;
+        let alterou = false;
+        for (const concurso of dados.concursos || []) for (const materia of concurso.materias || []) for (const assunto of materia.assuntos || []) for (const pagina of assunto.paginas || []) {
+            if (!pagina.cadernoHTML || !pagina.cadernoHTML.includes('data:image/')) continue;
+            const doc = new DOMParser().parseFromString(`<div id="raiz">${pagina.cadernoHTML}</div>`, 'text/html');
+            for (const img of doc.querySelectorAll('#raiz img[src^="data:image/"]')) {
+                const enviada = await enviarImagemAoStorage(await (await fetch(img.src)).blob());
+                img.src = enviada.url;
+                img.dataset.storagePath = enviada.caminho;
+                alterou = true;
+            }
+            pagina.cadernoHTML = doc.querySelector('#raiz').innerHTML;
+        }
+        if (alterou) { salvarTudo(); carregarEditor(); await salvarDadosNaNuvem(true); }
+        localStorage.setItem('imagens_storage_migradas_v1', 'ok');
+    }
+    let fonteAtual = 18;
+    let currentSearchIndex = -1;
+    let searchMatches = [];
+    let ignoreNextChange = false;
+    let selectedImg = null;
+    let toolbarImg = null;
+    let estudoFlipped = false;
+    let expanded = false, closeBtn = null;
+    let estudoModalAberto = false;
+
+    let recognition = null;
+    if('webkitSpeechRecognition' in window) { recognition = new webkitSpeechRecognition(); recognition.lang = 'pt-BR'; recognition.continuous = false; recognition.interimResults = false; }
+
+    function salvarTudo() { localStorage.setItem('dados_concursos', JSON.stringify(dados)); registrarAlteracaoLocal(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias(); }
+    function atualizarStats() { 
+        const pendentes = dados.flashcards.filter(f=>new Date(f.proxima_revisao)<=new Date()).length; 
+        document.getElementById('statsHeader').innerHTML = `${pendentes} pend.`;
+    }
+    
+    function atualizarPendencias() {
+        const pendentes = dados.flashcards.filter(f => new Date(f.proxima_revisao) <= new Date());
+        if (pendentes.length === 0) {
+            document.getElementById('pendenciasContainer').classList.add('hidden');
+            return;
+        }
+        
+        // Agrupar por matéria
+        const porMateria = {};
+        pendentes.forEach(f => {
+            const concurso = dados.concursos.find(c => c.id == f.concursoId);
+            const materia = concurso?.materias?.find(m => m.id == f.materiaId);
+            const materiaNome = materia ? `${concurso?.nome || '?'} - ${materia.nome}` : 'Sem matéria';
+            if (!porMateria[materiaNome]) {
+                porMateria[materiaNome] = { count: 0, concursoId: f.concursoId, materiaId: f.materiaId };
+            }
+            porMateria[materiaNome].count++;
+        });
+        
+        const container = document.getElementById('listaPendencias');
+        container.innerHTML = Object.entries(porMateria).map(([nome, info]) => `
+            <div class="pendencia-item flex justify-between items-center" onclick="irParaMateria(${info.concursoId}, ${info.materiaId})">
+                <span>📚 ${escapar(nome)}</span>
+                <div class="flex gap-2 items-center">
+                    <span class="bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full text-xs">${info.count} pend.</span>
+                    <button onclick="event.stopPropagation(); irParaMateria(${info.concursoId}, ${info.materiaId})" class="bg-purple-500 text-white px-2 py-0.5 rounded text-xs">📖 Estudar</button>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('pendenciasContainer').classList.remove('hidden');
+    }
+    
+    window.irParaMateria = function(concursoId, materiaId) {
+        salvarEditor();
+        concursoAtualId = concursoId;
+        const concurso = dados.concursos.find(c => c.id == concursoId);
+        if (concurso) concurso.materiaAtualId = materiaId;
+        materiaAtualId = materiaId;
+        const materia = concurso?.materias?.find(m => m.id == materiaId);
+        assuntoAtualId = materia?.assuntoAtualId || (materia?.assuntos[0]?.id || null);
+        navLevel = 'paginas';
+        if (assuntoAtualId) {
+            const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+            paginaAtualId = assunto?.paginaAtualId || (assunto?.paginas?.[0]?.id || null);
+        } else paginaAtualId = null;
+        salvarTudo();
+        renderNav();
+        carregarEditor();
+        atualizarPreview();
+        toast(`📂 ${concurso?.nome || 'Concurso'} › ${materia?.nome || 'Matéria'}`);
+        document.getElementById('pendenciasContainer').classList.add('hidden');
+        requestAnimationFrame(() => {
+            document.getElementById('painelPastas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    };
+    
+    window.iniciarEstudoMateria = function(concursoId, materiaId) {
+        const pendentes = dados.flashcards.filter(f => f.concursoId == concursoId && f.materiaId == materiaId && new Date(f.proxima_revisao) <= new Date());
+        if (pendentes.length === 0) { toast("✅ Nenhuma pendência!"); return; }
+        studyQueue = pendentes;
+        studyIdx = 0;
+        studySessionTotal = pendentes.length;
+        estudoModalAberto = true;
+        abrirModal('modalEstudo');
+        mostrarCard();
+    };
+    
+    function iniciarEstudoGeral() {
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) { 
+            alert("Selecione concurso, matéria e assunto"); 
+            return; 
+        }
+        const pendentes = dados.flashcards.filter(f => f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == assuntoAtualId && new Date(f.proxima_revisao) <= new Date());
+        if (pendentes.length === 0) { 
+            alert("Nenhum pendente!"); 
+            return; 
+        }
+        studyQueue = pendentes;
+        studyIdx = 0;
+        studySessionTotal = pendentes.length;
+        estudoModalAberto = true;
+        abrirModal('modalEstudo');
+        mostrarCard();
+    }
+
+    function iniciarEstudoPendentes() {
+        const pendentes = dados.flashcards.filter(f => new Date(f.proxima_revisao) <= new Date());
+        if (!pendentes.length) { toast('✅ Nenhum flashcard pendente!'); return; }
+        studyQueue = pendentes;
+        studyIdx = 0;
+        studySessionTotal = pendentes.length;
+        estudoModalAberto = true;
+        abrirModal('modalEstudo');
+        mostrarCard();
+    }
+
+    function escapar(str) { return String(str).replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
+    function toast(msg) { const t = document.getElementById('toast'); t.innerText = msg || '💾'; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 1600); }
+    window.toast = toast;
+
+    function atualizarEstatisticas() {
+        const hoje = new Date().toDateString();
+        const revisoesHoje = dados.flashcards.filter(f => f.ultima_revisao && new Date(f.ultima_revisao).toDateString() === hoje).length;
+        document.getElementById('revisoesHoje').innerText = revisoesHoje;
+        document.getElementById('totalFlashcards').innerText = dados.flashcards.length;
+        let streak = 0, data = new Date();
+        for(let i = 0; i < 365; i++) { const dataStr = data.toDateString(); const revisou = dados.flashcards.some(f => f.ultima_revisao && new Date(f.ultima_revisao).toDateString() === dataStr); if(revisou) streak++; else break; data.setDate(data.getDate() - 1); }
+        document.getElementById('streak').innerText = streak;
+    }
+    
+    function atualizarProgresso() {
+        const totalPendentes = dados.flashcards.filter(f => new Date(f.proxima_revisao) <= new Date()).length;
+        const total = dados.flashcards.length;
+        const concluidos = total - totalPendentes;
+        const percentual = total > 0 ? (concluidos / total) * 100 : 0;
+        document.getElementById('progressoEstudo').style.width = percentual + '%';
+        document.getElementById('progressoTexto').innerText = Math.round(percentual) + '% concluído';
+    }
+
+    function initDarkMode() {
+        if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+        document.getElementById('btnDarkMode').onclick = () => { document.body.classList.toggle('dark-mode'); localStorage.setItem('darkMode', document.body.classList.contains('dark-mode')); toast(document.body.classList.contains('dark-mode') ? '🌙 Modo noturno' : '☀️ Modo claro'); };
+    }
+
+    function indicarSalvando() { document.getElementById('autoSaveIndicator').className = 'saving'; document.getElementById('autoSaveText').textContent = 'salvando…'; }
+    function indicarSalvo() { const ind = document.getElementById('autoSaveIndicator'); ind.className = 'saved'; document.getElementById('autoSaveText').textContent = 'salvo'; setTimeout(() => { ind.className = ''; document.getElementById('autoSaveText').textContent = 'salvo'; }, 2000); }
+    function atualizarContadorPalavras() { const editor = document.getElementById('editor'); const texto = editor.innerText || ''; const palavras = texto.trim() === '' ? 0 : texto.trim().split(/\s+/).length; document.getElementById('wordCount').textContent = `${palavras} palavras · ${texto.length} caracteres`; }
+
+    function salvarEditor() {
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId || !paginaAtualId) return;
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        const pagina = assunto?.paginas?.find(p => p.id == paginaAtualId);
+        if (pagina) {
+            const editorClone = document.getElementById('editor').cloneNode(true);
+            editorClone.querySelectorAll('mark.search-highlight').forEach(marca => { const pai = marca.parentNode; while (marca.firstChild) pai.insertBefore(marca.firstChild, marca); marca.remove(); pai.normalize(); });
+            pagina.cadernoHTML = editorClone.innerHTML;
+            localStorage.setItem('dados_concursos', JSON.stringify(dados)); registrarAlteracaoLocal(); atualizarStats(); indicarSalvo();
+        }
+        atualizarContadorPalavras();
+    }
+    
+    function saveState() { if (ignoreNextChange) return; const html = document.getElementById('editor').innerHTML; if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== html) { undoStack.push(html); redoStack = []; if (undoStack.length > 100) undoStack.shift(); } }
+    function undo() { if (undoStack.length < 2) { toast("⚠️ Nada para desfazer"); return; } ignoreNextChange = true; const current = document.getElementById('editor').innerHTML; if (undoStack[undoStack.length - 1] === current) undoStack.pop(); const previous = undoStack.pop(); redoStack.push(current); document.getElementById('editor').innerHTML = previous; undoStack.push(previous); salvarEditor(); toast("↩️ Desfeito"); setTimeout(() => { ignoreNextChange = false; }, 100); }
+    function redo() { if (redoStack.length === 0) { toast("⚠️ Nada para refazer"); return; } ignoreNextChange = true; const current = document.getElementById('editor').innerHTML; const next = redoStack.pop(); undoStack.push(current); document.getElementById('editor').innerHTML = next; salvarEditor(); toast("↪️ Refeito"); setTimeout(() => { ignoreNextChange = false; }, 100); }
+    function setupUndoObserver() {
+        const editor = document.getElementById('editor'); let timeout = null;
+        new MutationObserver(() => { if (ignoreNextChange) return; indicarSalvando(); if (timeout) clearTimeout(timeout); timeout = setTimeout(() => { saveState(); salvarEditor(); atualizarContadorPalavras(); }, 400); }).observe(editor, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
+    function execCmd(cmd, value = null) { saveState(); if (value) document.execCommand(cmd, false, value); else document.execCommand(cmd, false, null); document.getElementById('editor').focus(); setTimeout(() => { salvarEditor(); saveState(); }, 50); }
+    
+    function centralizarTexto() {
+        saveState();
+        document.execCommand('justifyCenter', false, null);
+        salvarEditor();
+        saveState();
+        toast("⤢ Texto centralizado");
+        if (textToolbar) textToolbar.remove();
+    }
+    
+    function aplicarTitulo() {
+        const selection = window.getSelection();
+        if (!selection.isCollapsed && selection.toString().trim()) {
+            saveState();
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+            const span = document.createElement('span');
+            span.style.fontSize = '24px';
+            span.style.fontWeight = 'bold';
+            span.style.display = 'block';
+            span.style.margin = '12px 0 8px 0';
+            span.textContent = selectedText;
+            range.deleteContents();
+            range.insertNode(span);
+            salvarEditor();
+            saveState();
+            toast("📌 Título aplicado (24px)");
+        } else {
+            execCmd('formatBlock', '<h3>');
+            toast("📌 Título aplicado");
+        }
+        if (textToolbar) textToolbar.remove();
+    }
+    
+    document.getElementById('btnBold').onclick = () => execCmd('bold');
+    document.getElementById('btnItalic').onclick = () => execCmd('italic');
+    document.getElementById('btnUnderline').onclick = () => execCmd('underline');
+    document.getElementById('btnUndo').onclick = undo;
+    document.getElementById('btnRedo').onclick = redo;
+    document.getElementById('btnListaNum').onclick = () => { execCmd('insertOrderedList'); toast('1. Lista numerada!'); };
+    document.getElementById('btnListaItem').onclick = () => { execCmd('insertUnorderedList'); toast('• Lista criada!'); };
+    document.getElementById('btnIndent').onclick = () => { execCmd('indent'); toast('→ Recuado'); };
+    document.getElementById('btnOutdent').onclick = () => { execCmd('outdent'); toast('← Sem recuo'); };
+    document.getElementById('btnCentralizar').onclick = centralizarTexto;
+    document.getElementById('btnTitulo').onclick = aplicarTitulo;
+
+    function aumentarFonte() { fonteAtual = Math.min(fonteAtual + 2, 36); atualizarFonte(); }
+    function diminuirFonte() { fonteAtual = Math.max(fonteAtual - 2, 12); atualizarFonte(); }
+    function atualizarFonte() { document.getElementById('editor').style.fontSize = fonteAtual + 'px'; document.getElementById('fonteTamanho').innerText = fonteAtual; localStorage.setItem('fonteTamanho', fonteAtual); saveState(); }
+    document.getElementById('btnFonteMais').onclick = aumentarFonte;
+    document.getElementById('btnFonteMenos').onclick = diminuirFonte;
+    if (localStorage.getItem('fonteTamanho')) { fonteAtual = parseInt(localStorage.getItem('fonteTamanho')); atualizarFonte(); }
+
+    document.getElementById('editor').addEventListener('keydown', (e) => {
+        if (e.key === ' ') {
+            const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+            const range = sel.getRangeAt(0); const node = range.startContainer;
+            if (node.nodeType !== Node.TEXT_NODE) return;
+            const textBefore = node.textContent.substring(0, range.startOffset);
+            if (/^1\.$/.test(textBefore.trim())) { e.preventDefault(); saveState(); node.textContent = node.textContent.replace(/^1\.\s*/, ''); const r2 = document.createRange(); r2.setStart(node, 0); r2.collapse(true); sel.removeAllRanges(); sel.addRange(r2); execCmd('insertOrderedList'); toast('1. Lista numerada!'); return; }
+            if (/^[-*]$/.test(textBefore.trim())) { e.preventDefault(); saveState(); node.textContent = node.textContent.replace(/^[-*]\s*/, ''); const r2 = document.createRange(); r2.setStart(node, 0); r2.collapse(true); sel.removeAllRanges(); sel.addRange(r2); execCmd('insertUnorderedList'); toast('• Lista!'); return; }
+        }
+        if (e.key === 'Tab') { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { const anchor = sel.getRangeAt(0).commonAncestorContainer; const el = anchor.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor; if (el && el.closest('li, ol, ul')) { e.shiftKey ? execCmd('outdent') : execCmd('indent'); return; } const block = el ? (el.closest('p, div, h1, h2, h3, h4') !== document.getElementById('editor') ? el.closest('p, div, h1, h2, h3, h4') : null) || el : null; if (block && block !== document.getElementById('editor')) { saveState(); const STEP = 32; const cur = parseInt(block.style.marginLeft) || 0; block.style.marginLeft = (e.shiftKey ? Math.max(0, cur - STEP) : cur + STEP) + 'px'; salvarEditor(); saveState(); return; } } }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const modKey = isMac ? e.metaKey : e.ctrlKey;
+        
+        if (modalEstudo && modalEstudo.classList.contains('ativo')) {
+            if (['1', '2', '3', '4'].includes(e.key) && !estudoFlipped) {
+                e.preventDefault();
+                toast('👆 Revele a resposta antes de avaliar.');
+                return;
+            }
+            if (e.key === '1') {
+                e.preventDefault();
+                if (typeof window.responder === 'function') window.responder(2);
+                toast("🔴 Resposta: Difícil (1)");
+                return;
+            }
+            if (e.key === '2') {
+                e.preventDefault();
+                if (typeof window.responder === 'function') window.responder(3);
+                toast("🟠 Resposta: Médio (2)");
+                return;
+            }
+            if (e.key === '3' || e.key === '4') {
+                e.preventDefault();
+                if (typeof window.responder === 'function') window.responder(4);
+                toast("🟢 Resposta: Leve");
+                return;
+            }
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                if (typeof window.virarCard === 'function') window.virarCard();
+                return;
+            }
+        }
+        
+        if (modKey) { switch(e.key) {
+            case 'b': e.preventDefault(); execCmd('bold'); break; case 'i': e.preventDefault(); execCmd('italic'); break; case 'u': e.preventDefault(); execCmd('underline'); break;
+            case 'z': e.preventDefault(); undo(); break; case 'y': e.preventDefault(); redo(); break; case 'Z': e.preventDefault(); redo(); break;
+            case 'f': e.preventDefault(); document.getElementById('btnCriarFlashcard').click(); break;
+            case 'p': e.preventDefault(); document.getElementById('btnBuscar').click(); break;
+            case 'Enter': e.preventDefault(); document.getElementById('btnCriarFlashcard').click(); break;
+            case '+': case '=': e.preventDefault(); aumentarFonte(); toast(`Fonte: ${fonteAtual}px`); break; case '-': e.preventDefault(); diminuirFonte(); toast(`Fonte: ${fonteAtual}px`); break;
+            case 'O': if (e.shiftKey) { e.preventDefault(); execCmd('insertOrderedList'); toast('1. Lista numerada'); } break;
+            case 'U': if (e.shiftKey) { e.preventDefault(); execCmd('insertUnorderedList'); toast('• Lista'); } break;
+        } }
+        
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            e.preventDefault();
+            document.getElementById('btnCriarFlashcard').click();
+            toast("✨ Atalho: Criar Flashcard");
+        }
+        if (e.ctrlKey && e.altKey && e.key === 'e') {
+            e.preventDefault();
+            document.getElementById('btnExpandir').click();
+            toast("⤢ Atalho: Expandir texto");
+        }
+        if (e.key === 'Escape') {
+            if (expanded) {
+                document.getElementById('btnExpandir').click();
+            }
+            if (textToolbar) {
+                textToolbar.remove();
+                textToolbar = null;
+            }
+        }
+        
+        if (e.key === 'Delete' && !modKey) { const sel = window.getSelection(); if (!sel.isCollapsed) { const range = sel.getRangeAt(0); const cell = range.commonAncestorContainer.closest?.('th, td'); if (cell) { e.preventDefault(); saveState(); cell.innerText = ''; salvarEditor(); saveState(); toast("🗑️ Conteúdo removido"); } } }
+    });
+
+    document.getElementById('btnCriarTabela').onclick = () => {
+        const linhas = prompt("Número de linhas:", "3"), cols = prompt("Número de colunas:", "3");
+        if (!linhas || !cols) return;
+        saveState();
+        let tabelaHtml = '<table border="1" style="border-collapse:collapse; width:100%; margin:8px 0;">';
+        for (let i = 0; i < parseInt(linhas); i++) { 
+            tabelaHtml += '<tr>'; 
+            for (let j = 0; j < parseInt(cols); j++) { 
+                if (i === 0) tabelaHtml += '<th contenteditable="true">&nbsp;</th>'; 
+                else tabelaHtml += '<td contenteditable="true">&nbsp;<\/td>'; 
+            } 
+            tabelaHtml += '</tr>'; 
+        }
+        tabelaHtml += '</table>';
+        document.execCommand('insertHTML', false, tabelaHtml);
+        salvarEditor(); saveState(); toast(`📊 Tabela ${linhas}x${cols} criada!`);
+    };
+
+    document.getElementById('btnExpandir').onclick = () => {
+        const editor = document.getElementById('editor');
+        if (!expanded) { 
+            editor.classList.add('expanded'); 
+            expanded = true; 
+            closeBtn = document.createElement('button'); 
+            closeBtn.innerText = '✕ Sair (ESC)'; 
+            closeBtn.className = 'close-expand'; 
+            closeBtn.onclick = () => { 
+                editor.classList.remove('expanded'); 
+                if (closeBtn) closeBtn.remove(); 
+                expanded = false; 
+                editor.focus(); 
+            }; 
+            document.body.appendChild(closeBtn); 
+        }
+        else { 
+            editor.classList.remove('expanded'); 
+            if (closeBtn) closeBtn.remove(); 
+            expanded = false; 
+        }
+        editor.focus();
+    };
+
+    document.getElementById('btnLembrete').onclick = () => {
+        if (Notification.permission === 'granted') {
+            const hora = prompt("Horário (HH:MM):", "20:00"); if (!hora) return;
+            const [h, m] = hora.split(':'); const agora = new Date(); let proximo = new Date();
+            proximo.setHours(parseInt(h), parseInt(m), 0, 0); if (proximo <= agora) proximo.setDate(proximo.getDate() + 1);
+            if (lembreteAtivo) clearTimeout(window.lembreteTimeout);
+            window.lembreteTimeout = setTimeout(() => { new Notification('📚 Hora de estudar!', { body: 'Revise seus flashcards!', icon: 'https://i.postimg.cc/Pptkggqw/icone.png' }); }, proximo - agora);
+            lembreteAtivo = true; toast(`⏰ Lembrete ${h}:${m}`);
+        } else if (Notification.permission !== 'denied') { Notification.requestPermission().then(p => { if (p === 'granted') document.getElementById('btnLembrete').onclick(); }); }
+        else { alert("Permissão negada."); }
+    };
+
+    function iniciarReconhecimentoVoz(callback) { if(!recognition) { toast("🎤 Voz não suportado"); return; } recognition.onresult = (event) => { callback(event.results[0][0].transcript); }; recognition.onerror = () => toast("🎤 Não entendi"); recognition.start(); toast("🎤 Ouvindo..."); }
+    document.getElementById('btnComandoVoz').onclick = () => { iniciarReconhecimentoVoz((texto) => { toast(`Você disse: "${texto}"`); const pendentes = dados.flashcards.filter(f => f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == assuntoAtualId && new Date(f.proxima_revisao) <= new Date()); const match = pendentes.find(f => f.resposta.toLowerCase().includes(texto.toLowerCase()) || texto.toLowerCase().includes(f.resposta.toLowerCase())); if(match) { toast(`✅ Encontrado: ${match.pergunta.substring(0,30)}...`); editarFlashcard(match.id); } else { toast("❌ Nenhum flashcard corresponde"); } }); };
+
+    let lastViewportHeight = window.innerHeight;
+    function isKeyboardOpen() { return window.innerHeight < lastViewportHeight - 150; }
+    window.addEventListener('resize', () => { lastViewportHeight = window.innerHeight; if (textToolbar) { textToolbar.remove(); textToolbar = null; } });
+
+    function mostrarToolbarTexto() {
+        const selection = window.getSelection();
+        if (selection.isCollapsed || selection.toString().trim() === "") { if (textToolbar) textToolbar.remove(); return; }
+        const range = selection.getRangeAt(0); const rect = range.getBoundingClientRect();
+        if (textToolbar) textToolbar.remove();
+        textToolbar = document.createElement('div'); textToolbar.className = 'text-toolbar';
+        const keyboardOpen = isKeyboardOpen(); let left = rect.left + (rect.width / 2) - 230;
+        if (keyboardOpen) { textToolbar.style.bottom = '10px'; textToolbar.style.top = 'auto'; }
+        else { let top = rect.top - 85; if (top < 10) top = rect.bottom + 15; textToolbar.style.top = top + 'px'; textToolbar.style.bottom = 'auto'; }
+        if (left + 460 > window.innerWidth) left = window.innerWidth - 470; if (left < 10) left = 10;
+        textToolbar.style.left = left + 'px';
+        const selecaoSalva = range.cloneRange();
+        textToolbar.innerHTML = `<button id="tbB" style="font-weight:bold">N</button><button id="tbI" style="font-style:italic">I</button><button id="tbU" style="text-decoration:underline">S</button><button id="tbTitulo">H</button><button id="tbLista">•≡</button><button id="tbListaNum">1≡</button><button id="tbFlashcard" style="background:#dbeafe;color:#2563eb">✨</button><input id="tbCorTexto" type="color" value="#2563eb" title="Cor da letra" style="width:30px;height:28px;padding:2px;border:0;background:transparent;cursor:pointer"><button id="tbAmarelo" class="color-btn" title="Marca-texto amarelo" style="background:#fef08a">●</button><button id="tbVerde" class="color-btn" title="Marca-texto verde" style="background:#bbf7d0">●</button><button id="tbAzul" class="color-btn" title="Marca-texto azul" style="background:#bfdbfe">●</button><button id="tbVermelho" class="color-btn" title="Marca-texto vermelho" style="background:#fee2e2">●</button><button id="tbLaranja" class="color-btn" title="Marca-texto laranja" style="background:#ffedd5">●</button><button id="tbRoxo" class="color-btn" title="Marca-texto roxo" style="background:#f3e8ff">●</button><button id="tbApagarMarca" title="Remover marca-texto" style="background:#ef4444;color:white;padding:4px 8px">🧽</button><button id="tbFechar" style="background:#64748b;color:white;padding:4px 8px">✕</button>`;
+        document.body.appendChild(textToolbar);
+        document.getElementById('tbB').onclick = () => { execCmd('bold'); if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbI').onclick = () => { execCmd('italic'); if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbU').onclick = () => { execCmd('underline'); if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbTitulo').onclick = () => { aplicarTitulo(); if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbLista').onclick = () => { execCmd('insertUnorderedList'); if (textToolbar) textToolbar.remove(); toast("• Lista criada"); };
+        document.getElementById('tbListaNum').onclick = () => { execCmd('insertOrderedList'); if (textToolbar) textToolbar.remove(); toast("1. Lista numerada"); };
+        document.getElementById('tbCorTexto').oninput = event => { const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(selecaoSalva); execCmd('foreColor', event.target.value); toast("🎨 Cor da letra aplicada"); if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbFlashcard').onclick = () => { 
+            criarFlashcard(); 
+            if (textToolbar) textToolbar.remove(); 
+        };
+        const marcar = (corClass) => { const span = document.createElement('span'); span.className = corClass; try { const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(selecaoSalva.cloneRange()); const r = sel.getRangeAt(0); r.surroundContents(span); salvarEditor(); saveState(); toast("✅ Marca-texto aplicado"); } catch(e) { toast("Selecione um trecho sem quebra de parágrafo"); } if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbAmarelo').onclick = () => marcar('mark-yellow');
+        document.getElementById('tbVerde').onclick = () => marcar('mark-green');
+        document.getElementById('tbAzul').onclick = () => marcar('mark-blue');
+        document.getElementById('tbVermelho').onclick = () => marcar('mark-red');
+        document.getElementById('tbLaranja').onclick = () => marcar('mark-orange');
+        document.getElementById('tbRoxo').onclick = () => marcar('mark-purple');
+        document.getElementById('tbApagarMarca').onclick = () => { const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(selecaoSalva.cloneRange()); if (!sel.isCollapsed) { saveState(); const range = sel.getRangeAt(0); document.querySelectorAll('#editor .mark-red, #editor .mark-orange, #editor .mark-purple, #editor .mark-yellow, #editor .mark-green, #editor .mark-blue').forEach(mark => { if (range.intersectsNode(mark)) { const parent = mark.parentNode; while(mark.firstChild) parent.insertBefore(mark.firstChild, mark); parent.removeChild(mark); parent.normalize(); } }); salvarEditor(); saveState(); toast("🧽 Marcação removida"); } if (textToolbar) textToolbar.remove(); };
+        document.getElementById('tbFechar').onclick = () => { if (textToolbar) textToolbar.remove(); };
+    }
+    document.getElementById('editor').addEventListener('mouseup', () => setTimeout(mostrarToolbarTexto, 10));
+    document.getElementById('editor').addEventListener('touchend', () => setTimeout(mostrarToolbarTexto, 100));
+
+    function limparDestaquesBusca() {
+        const editor = document.getElementById('editor');
+        ignoreNextChange = true;
+        editor.querySelectorAll('mark.search-highlight').forEach(marca => { const pai = marca.parentNode; while (marca.firstChild) pai.insertBefore(marca.firstChild, marca); marca.remove(); pai.normalize(); });
+        setTimeout(() => { ignoreNextChange = false; }, 0);
+    }
+    function highlightSearch(termo) {
+        const editor = document.getElementById('editor'); if (!termo) return [];
+        limparDestaquesBusca();
+        ignoreNextChange = true;
+        const regex = new RegExp(termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, { acceptNode(no) { return no.parentElement?.closest('script, style, mark.search-highlight') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+        const textos = []; while (walker.nextNode()) textos.push(walker.currentNode);
+        textos.forEach(no => {
+            const texto = no.nodeValue; regex.lastIndex = 0;
+            if (!regex.test(texto)) return;
+            regex.lastIndex = 0;
+            const fragmento = document.createDocumentFragment(); let inicio = 0; let encontrado;
+            while ((encontrado = regex.exec(texto))) {
+                fragmento.appendChild(document.createTextNode(texto.slice(inicio, encontrado.index)));
+                const marca = document.createElement('mark'); marca.className = 'search-highlight'; marca.textContent = encontrado[0]; fragmento.appendChild(marca);
+                inicio = encontrado.index + encontrado[0].length;
+            }
+            fragmento.appendChild(document.createTextNode(texto.slice(inicio))); no.replaceWith(fragmento);
+        });
+        setTimeout(() => { ignoreNextChange = false; }, 0);
+        return Array.from(editor.querySelectorAll('mark.search-highlight'));
+    }
+    function navigateSearch(direction) {
+        if (searchMatches.length === 0) return;
+        if (currentSearchIndex >= 0) searchMatches[currentSearchIndex]?.classList.remove('search-highlight-current');
+        currentSearchIndex = direction === 'next' ? (currentSearchIndex + 1) % searchMatches.length : (currentSearchIndex - 1 + searchMatches.length) % searchMatches.length;
+        const current = searchMatches[currentSearchIndex];
+        if (current) { current.classList.add('search-highlight-current'); current.scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('buscaStatus').textContent = `${currentSearchIndex + 1} de ${searchMatches.length} ocorrência(s)`; }
+    }
+    document.getElementById('buscaExecutar').onclick = () => {
+        const termo = document.getElementById('buscaInput').value.trim().toLowerCase();
+        if (!termo) { alert("Digite algo"); return; }
+        searchMatches = highlightSearch(termo);
+        if (searchMatches.length > 0) { currentSearchIndex = -1; navigateSearch('next'); }
+        else { document.getElementById('buscaStatus').textContent = `“${termo}” não foi encontrado.`; }
+    };
+    document.getElementById('buscaAnterior').onclick = () => navigateSearch('prev');
+    document.getElementById('buscaProxima').onclick = () => navigateSearch('next');
+    document.getElementById('buscaFechar').onclick = () => fecharModal('modalBusca');
+    document.getElementById('buscaLimpar').onclick = () => { limparDestaquesBusca(); searchMatches = []; currentSearchIndex = -1; document.getElementById('buscaStatus').textContent = 'Destaques removidos.'; };
+    document.getElementById('buscaInput').addEventListener('keydown', evento => { if (evento.key === 'Enter') { evento.preventDefault(); document.getElementById('buscaExecutar').click(); } });
+    document.getElementById('btnBuscar').onclick = () => { abrirModal('modalBusca'); setTimeout(() => document.getElementById('buscaInput').focus(), 50); };
+
+    function autoRedimensionarImagem(img) { const editorWidth = document.getElementById('editor').clientWidth - 32; const maxWidth = Math.min(600, editorWidth); if (img.naturalWidth > maxWidth) { img.style.width = maxWidth + 'px'; img.style.height = 'auto'; } else { img.style.width = img.naturalWidth + 'px'; img.style.height = 'auto'; } }
+    function deselecionarImagem() { if (selectedImg) { selectedImg.classList.remove('img-selected'); selectedImg = null; } }
+    function removerToolbarImg() { if (toolbarImg) { toolbarImg.remove(); toolbarImg = null; } deselecionarImagem(); }
+    function criarToolbarImagem(img) {
+        removerToolbarImg(); selectedImg = img; img.classList.add('img-selected');
+        toolbarImg = document.createElement('div'); toolbarImg.className = 'img-toolbar';
+        toolbarImg.innerHTML = `<div class="toolbar-group"><span class="lbl">Tamanho</span><button id="imgPeq">🔹 P</button><button id="imgMed">⬛ M</button><button id="imgGrand">🔷 G</button><button id="imgOrig">↩ Original</button></div><div class="toolbar-group"><span class="lbl">Alinhamento</span><button id="imgEsq">◀ Esq</button><button id="imgCen">▬ Cen</button><button id="imgDir">▶ Dir</button></div><div class="toolbar-group"><button id="imgRecortar">✂️</button><button id="imgExcluir" style="background:#fee2e2;color:#dc2626">🗑️</button></div>`;
+        document.body.appendChild(toolbarImg);
+        document.getElementById('imgPeq').onclick = () => { saveState(); img.style.width = '120px'; img.style.height = 'auto'; salvarEditor(); saveState(); toast("🔹 Pequena"); };
+        document.getElementById('imgMed').onclick = () => { saveState(); img.style.width = '280px'; img.style.height = 'auto'; salvarEditor(); saveState(); toast("⬛ Média"); };
+        document.getElementById('imgGrand').onclick = () => { saveState(); img.style.width = '100%'; img.style.height = 'auto'; salvarEditor(); saveState(); toast("🔷 Grande"); };
+        document.getElementById('imgOrig').onclick = () => { saveState(); img.style.width = ''; img.style.height = ''; autoRedimensionarImagem(img); salvarEditor(); saveState(); toast("↩ Original"); };
+        document.getElementById('imgEsq').onclick = () => { saveState(); img.className = img.className.replace(/img-(left|right|center)/g, ''); img.classList.add('img-left'); img.style.float = 'left'; img.style.display = 'inline'; img.style.margin = '4px 10px 4px 0'; salvarEditor(); saveState(); toast("◀ Esquerda"); };
+        document.getElementById('imgCen').onclick = () => { saveState(); img.className = img.className.replace(/img-(left|right|center)/g, ''); img.classList.add('img-center'); img.style.float = ''; img.style.display = 'block'; img.style.margin = '6px auto'; salvarEditor(); saveState(); toast("▬ Centro"); };
+        document.getElementById('imgDir').onclick = () => { saveState(); img.className = img.className.replace(/img-(left|right|center)/g, ''); img.classList.add('img-right'); img.style.float = 'right'; img.style.display = 'inline'; img.style.margin = '4px 0 4px 10px'; salvarEditor(); saveState(); toast("▶ Direita"); };
+        document.getElementById('imgRecortar').onclick = () => { abrirRecorte(img); removerToolbarImg(); };
+        document.getElementById('imgExcluir').onclick = () => { saveState(); img.remove(); salvarEditor(); saveState(); removerToolbarImg(); toast("🗑️ Imagem removida"); };
+    }
+    function abrirRecorte(img) {
+        const modal = document.createElement('div'); modal.className = 'crop-modal';
+        modal.innerHTML = `<div class="crop-container"><img id="cropImg" src="${img.src}" class="crop-image"><div class="recorte-botoes"><button id="cropOk" style="background:#22c55e;color:white;padding:10px 20px;border-radius:40px;font-size:16px">OK</button><button id="cropCancel" style="background:#ef4444;color:white;padding:10px 20px;border-radius:40px;font-size:16px">Cancelar</button></div></div>`;
+        document.body.appendChild(modal);
+        const cropImg = modal.querySelector('#cropImg');
+        cropper = new Cropper(cropImg, { aspectRatio: NaN, viewMode: 1, movable: true, zoomable: true });
+        modal.querySelector('#cropOk').onclick = async () => { const canvas = cropper.getCroppedCanvas(); if (canvas) { try { toast("⏳ Salvando imagem..."); const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82)); const enviada = await enviarImagemAoStorage(blob); saveState(); img.src = enviada.url; img.dataset.storagePath = enviada.caminho; img.style.width = 'auto'; img.style.height = 'auto'; salvarEditor(); saveState(); toast("✅ Imagem salva"); } catch(e) { toast("❌ " + e.message); } } cropper.destroy(); modal.remove(); };
+        modal.querySelector('#cropCancel').onclick = () => { cropper.destroy(); modal.remove(); };
+    }
+    document.getElementById('btnEscolherFoto').onclick = () => {
+        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+        input.onchange = async (e) => { const file = e.target.files[0]; if (!file) return; try { toast("⏳ Enviando imagem..."); const enviada = await enviarImagemAoStorage(file); saveState(); const img = new Image(); img.onload = function() { const editorEl = document.getElementById('editor'); const maxWidth = Math.min(600, editorEl.clientWidth - 32); const imgEl = document.createElement('img'); imgEl.src = enviada.url; imgEl.dataset.storagePath = enviada.caminho; imgEl.style.width = Math.min(this.naturalWidth, maxWidth) + 'px'; imgEl.style.height = 'auto'; imgEl.style.maxWidth = '100%'; imgEl.style.display = 'block'; imgEl.style.margin = '6px auto'; imgEl.style.cursor = 'pointer'; imgEl.style.borderRadius = '6px'; imgEl.onclick = (evt) => { evt.stopPropagation(); criarToolbarImagem(imgEl); }; editorEl.appendChild(imgEl); salvarEditor(); saveState(); toast("✅ Imagem salva no Storage"); }; img.src = enviada.url; } catch(err) { toast("❌ " + err.message); } }; input.click();
+    };
+    document.getElementById('editor').addEventListener('click', (e) => { if (e.target.tagName === 'IMG') { e.stopPropagation(); criarToolbarImagem(e.target); } else { removerToolbarImg(); } });
+    document.addEventListener('click', (e) => { if (toolbarImg && !toolbarImg.contains(e.target) && e.target.tagName !== 'IMG') { removerToolbarImg(); } });
+    function iniciarImagens() { document.querySelectorAll('#editor img').forEach(img => { img.style.cursor = 'pointer'; img.onclick = (e) => { e.stopPropagation(); criarToolbarImagem(img); }; }); }
+
+    // ==================== PDF ====================
+    document.getElementById('btnGerarPDF').onclick = async () => {
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId || !paginaAtualId) { alert("Selecione concurso, matéria, assunto e página."); return; }
+        document.getElementById('pdfOverlay').classList.add('ativo');
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        const pagina = assunto?.paginas?.find(p => p.id == paginaAtualId);
+        const tituloPagina = pagina ? `${pagina.titulo} (${formatarData(pagina.data)})` : '';
+        const titulo = `${concurso?.nome || ''} · ${materia?.nome || ''} · ${assunto?.nome || ''} · ${tituloPagina}`;
+        try {
+            const editorClone = document.getElementById('editor').cloneNode(true);
+            editorClone.querySelectorAll('.img-toolbar, .text-toolbar, .close-expand, .img-selected').forEach(el => el.remove());
+            editorClone.removeAttribute('contenteditable');
+            editorClone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+            editorClone.querySelectorAll('mark.search-highlight').forEach(m => { const parent = m.parentNode; while(m.firstChild) parent.insertBefore(m.firstChild, m); parent.removeChild(m); parent.normalize(); });
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.top = '-9999px';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.width = '800px';
+            tempDiv.appendChild(editorClone);
+            document.body.appendChild(tempDiv);
+            
+            const imgs = Array.from(editorClone.querySelectorAll('img'));
+            await Promise.all(imgs.map(img => new Promise((resolve) => {
+                const src = img.getAttribute('src') || '';
+                img.classList.remove('img-selected');
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.margin = '8px auto';
+                if (!src || src.startsWith('data:')) { resolve(); return; }
+                const canvas = document.createElement('canvas');
+                const tempImg = new Image();
+                tempImg.crossOrigin = 'Anonymous';
+                tempImg.onload = () => {
+                    canvas.width = tempImg.naturalWidth || 400;
+                    canvas.height = tempImg.naturalHeight || 300;
+                    canvas.getContext('2d').drawImage(tempImg, 0, 0);
+                    try { img.src = canvas.toDataURL('image/jpeg', 0.92); } catch(e) {}
+                    resolve();
+                };
+                tempImg.onerror = () => { resolve(); };
+                tempImg.src = src;
+            })));
+            
+            const container = document.createElement('div');
+            container.style.cssText = 'font-family: Georgia, serif; color: #1a1a1a; background: white; padding: 20px;';
+            container.innerHTML = `
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: white; font-family: Georgia, serif; }
+  .pdf-header { border-bottom: 2px solid #15803d; padding-bottom: 10px; margin-bottom: 20px; }
+  .pdf-header h1 { font-size: 22px; color: #15803d; margin: 0 0 4px; }
+  .pdf-header h2 { font-size: 13px; color: #475569; margin: 0; font-weight: normal; }
+  .pdf-body { font-size: 13px; line-height: 1.6; font-family: Georgia, serif; color: #1a1a1a; }
+  .pdf-body p, .pdf-body div { margin: 0.2em 0; line-height: 1.5; }
+  .pdf-body h1 { font-size: 20px; margin: 10px 0 6px; }
+  .pdf-body h2 { font-size: 17px; margin: 8px 0 4px; border-bottom: 1px solid #e2e8f0; }
+  .pdf-body h3 { font-size: 15px; margin: 6px 0 3px; }
+  .pdf-body ul { list-style: none; padding-left: 1.4rem; margin: 4px 0; }
+  .pdf-body ul li { margin: 3px 0; position: relative; padding-left: 1em; }
+  .pdf-body ul li::before { content: "·"; position: absolute; left: 0; font-size: 1.3em; line-height: 1; }
+  .pdf-body ol { list-style-type: decimal; padding-left: 1.8rem; margin: 4px 0; }
+  .pdf-body ol li { margin: 3px 0; }
+  .pdf-body .mark-red { background-color: #fee2e2; padding: 1px 3px; border-radius: 3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body .mark-orange { background-color: #ffedd5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body .mark-purple { background-color: #f3e8ff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body .mark-yellow { background-color: #fef08a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body .mark-green { background-color: #bbf7d0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body .mark-blue { background-color: #bfdbfe; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-body table { border-collapse: collapse; width: 100%; margin: 8px 0; page-break-inside: auto; break-inside: auto; }
+  .pdf-body thead { display: table-header-group; }
+  .pdf-body tr { page-break-inside: avoid; break-inside: avoid; }
+  .pdf-body th, .pdf-body td { border: 1px solid #94a3b8; padding: 6px 8px; font-size: 12px; }
+  .pdf-body th { background-color: #f1f5f9; font-weight: bold; }
+  .pdf-body img { max-width: 100% !important; height: auto !important; display: block; margin: 10px auto; border-radius: 6px; page-break-inside: avoid; }
+  .pdf-footer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 10px; color: #94a3b8; text-align: right; }
+</style>
+<div class="pdf-header"><h1>📘 Caderno de Erros</h1><h2>${escapar(titulo)}</h2></div>
+<div class="pdf-body">${editorClone.innerHTML}</div>
+<div class="pdf-footer">Gerado em ${new Date().toLocaleString('pt-BR')}</div>`;
+            
+            tempDiv.remove();
+            
+            const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
+            await html2pdf().set({ margin: [12, 12, 14, 12], filename: nomeArquivo, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'img'] }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
+            toast("📄 PDF gerado!");
+        } catch(err) { console.error(err); toast("❌ Erro ao gerar PDF"); } finally { document.getElementById('pdfOverlay').classList.remove('ativo'); }
+    };
+
+    document.getElementById('btnGerarPDFAssunto').onclick = async () => {
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) { alert("Abra o assunto que deseja exportar."); return; }
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        const paginas = (assunto?.paginas || []).filter(pagina => pagina.cadernoHTML?.trim());
+        if (!paginas.length) { toast("⚠️ Este assunto não possui anotações para exportar."); return; }
+
+        document.getElementById('pdfOverlay').classList.add('ativo');
+        try {
+            const paginasHTML = paginas.map(pagina => `<section class="pagina-assunto"><h2>${escapar(pagina.titulo || 'Página de estudo')}</h2><div>${pagina.cadernoHTML}</div></section>`).join('');
+            const container = document.createElement('div');
+            container.style.cssText = 'font-family: Georgia, serif; color: #1a1a1a; background: white; padding: 20px;';
+            container.innerHTML = `<style>
+                * { box-sizing: border-box; }
+                .cabecalho-pdf { border-bottom: 2px solid #15803d; padding-bottom: 10px; margin-bottom: 20px; }
+                .cabecalho-pdf h1 { font-size: 22px; color: #15803d; margin: 0 0 4px; }
+                .cabecalho-pdf p { margin: 0; color: #475569; font-size: 13px; }
+                .pagina-assunto { font-size: 13px; line-height: 1.6; }
+                .pagina-assunto h2 { color: #166534; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px; margin: 18px 0 10px; font-size: 17px; }
+                .pagina-assunto h3 { font-size: 15px; margin: 12px 0 5px; }
+                .pagina-assunto p, .pagina-assunto div { margin: .35em 0; }
+                .pagina-assunto img { max-width: 100% !important; height: auto !important; }
+                .pagina-assunto table { border-collapse: collapse; width: 100%; page-break-inside: auto; break-inside: auto; }
+                .pagina-assunto th, .pagina-assunto td { border: 1px solid #94a3b8; padding: 6px; }
+                .pagina-assunto thead { display: table-header-group; }
+                .pagina-assunto tr { page-break-inside: avoid; break-inside: avoid; }
+                .mark-red { background:#fee2e2; } .mark-orange { background:#ffedd5; } .mark-purple { background:#f3e8ff; }
+                .mark-yellow { background:#fef08a; } .mark-green { background:#bbf7d0; } .mark-blue { background:#bfdbfe; }
+            </style><div class="cabecalho-pdf"><h1>📚 ${escapar(assunto.nome)}</h1><p>${escapar(concurso?.nome || '')} › ${escapar(materia?.nome || '')} › ${escapar(assunto.nome)}</p></div>${paginasHTML}<p style="margin-top:20px;color:#64748b;font-size:10px">Gerado em ${new Date().toLocaleString('pt-BR')}</p>`;
+            const nomeArquivo = `${assunto.nome}_caderno_completo.pdf`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+            await html2pdf().set({ margin: [12, 12, 14, 12], filename: nomeArquivo, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'img'] }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
+            toast("📚 PDF do assunto gerado!");
+        } catch (erro) { console.error(erro); toast("❌ Erro ao gerar PDF do assunto."); }
+        finally { document.getElementById('pdfOverlay').classList.remove('ativo'); }
+    };
+
+    // ==================== NAVEGAÇÃO EM PASTAS (Concursos > Matérias > Assuntos > Páginas) ====================
+    let navLevel = 'concursos';
+    let paginaAtualId = null;
+
+    function formatarData(iso) {
+        try { const d = new Date(iso); return d.toLocaleDateString('pt-BR'); } catch(e) { return ''; }
+    }
+
+    function migrarDados() {
+        dados.concursos.forEach(c => {
+            (c.materias || []).forEach(m => {
+                (m.assuntos || []).forEach(a => {
+                    if (!a.paginas) {
+                        if (typeof a.cadernoHTML === 'string') {
+                            const pg = { id: Date.now() + Math.floor(Math.random()*10000), titulo: 'Página 1', data: new Date().toISOString(), cadernoHTML: a.cadernoHTML };
+                            a.paginas = [pg];
+                            a.paginaAtualId = pg.id;
+                            delete a.cadernoHTML;
+                        } else {
+                            a.paginas = [];
+                            a.paginaAtualId = null;
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    function renderNav() {
+        const breadcrumb = document.getElementById('navBreadcrumb');
+        const titulo = document.getElementById('navTitulo');
+        const lista = document.getElementById('navLista');
+        const btnNovo = document.getElementById('btnNovoItem');
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+
+        let crumbs = [`<span class="cursor-pointer hover:text-green-600" onclick="navegarPara('concursos')">🏛️ Concursos</span>`];
+        if (navLevel !== 'concursos' && concurso) crumbs.push(`<span>›</span><span class="cursor-pointer hover:text-green-600" onclick="navegarPara('materias')">${escapar(concurso.nome)}</span>`);
+        if ((navLevel === 'assuntos' || navLevel === 'paginas') && materia) crumbs.push(`<span>›</span><span class="cursor-pointer hover:text-green-600" onclick="navegarPara('assuntos')">${escapar(materia.nome)}</span>`);
+        if (navLevel === 'paginas' && assunto) crumbs.push(`<span>›</span><span class="font-semibold text-green-700">${escapar(assunto.nome)}</span>`);
+        breadcrumb.innerHTML = crumbs.join(' ');
+
+        if (navLevel === 'concursos') {
+            titulo.innerText = '🏛️ Concursos';
+            if (!dados.concursos.length) { lista.innerHTML = '<div class="text-gray-400 text-sm p-1">Nenhum concurso. Toque em + para criar.</div>'; }
+            else lista.innerHTML = dados.concursos.map(c => `<div class="flex justify-between items-center p-2 rounded bg-gray-50 hover:bg-green-50"><span class="text-sm font-medium cursor-pointer flex-1 truncate" onclick="abrirConcurso(${c.id})">🏛️ ${escapar(c.nome)}</span><div><button onclick="renomearConcurso(${c.id})" class="text-xs text-gray-600 mr-1">✏️</button><button onclick="excluirConcurso(${c.id})" class="text-xs text-red-600">🗑️</button></div></div>`).join('');
+        } else if (navLevel === 'materias') {
+            titulo.innerText = '📚 Matérias';
+            if (!concurso?.materias?.length) { lista.innerHTML = '<div class="text-gray-400 text-sm p-1">Nenhuma matéria. Toque em + para criar.</div>'; }
+            else lista.innerHTML = concurso.materias.map(m => `<div class="flex justify-between items-center p-2 rounded bg-gray-50 hover:bg-green-50"><span class="text-sm font-medium cursor-pointer flex-1 truncate" onclick="abrirMateria(${m.id})">📚 ${escapar(m.nome)}</span><div><button onclick="renomearMateria(${m.id})" class="text-xs text-gray-600 mr-1">✏️</button><button onclick="excluirMateria(${m.id})" class="text-xs text-red-600">🗑️</button></div></div>`).join('');
+        } else if (navLevel === 'assuntos') {
+            titulo.innerText = '📌 Assuntos';
+            if (!materia?.assuntos?.length) { lista.innerHTML = '<div class="text-gray-400 text-sm p-1">Nenhum assunto. Toque em + para criar.</div>'; }
+            else lista.innerHTML = materia.assuntos.map(a => `<div class="flex justify-between items-center p-2 rounded bg-gray-50 hover:bg-green-50"><span class="text-sm font-medium cursor-pointer flex-1 truncate" onclick="abrirAssunto(${a.id})">📌 ${escapar(a.nome)} <span class="text-xs text-gray-400">(${(a.paginas||[]).length} pág.)</span></span><div><button onclick="renomearAssunto(${a.id})" class="text-xs text-gray-600 mr-1">✏️</button><button onclick="excluirAssunto(${a.id})" class="text-xs text-red-600">🗑️</button></div></div>`).join('');
+        } else if (navLevel === 'paginas') {
+            titulo.innerText = '📅 Páginas de Estudo';
+            const paginas = [...(assunto?.paginas || [])].sort((x,y) => new Date(y.data) - new Date(x.data));
+            if (!paginas.length) { lista.innerHTML = '<div class="text-gray-400 text-sm p-1">Nenhuma página. Toque em + para registrar o estudo de hoje.</div>'; }
+            else lista.innerHTML = paginas.map(p => `<div class="flex justify-between items-center p-2 rounded ${paginaAtualId == p.id ? 'bg-green-100 ring-1 ring-green-400' : 'bg-gray-50'} hover:bg-green-50"><span class="text-sm font-medium cursor-pointer flex-1 truncate" onclick="abrirPagina(${p.id})">📅 ${formatarData(p.data)} — ${escapar(p.titulo)}</span><div><button onclick="renomearPagina(${p.id})" class="text-xs text-gray-600 mr-1">✏️</button><button onclick="excluirPagina(${p.id})" class="text-xs text-red-600">🗑️</button></div></div>`).join('');
+        }
+        btnNovo.title = navLevel === 'concursos' ? 'Novo concurso' : navLevel === 'materias' ? 'Nova matéria' : navLevel === 'assuntos' ? 'Novo assunto' : 'Nova página (estudo de hoje)';
+    }
+
+    window.navegarPara = function(nivel) {
+        salvarEditor();
+        navLevel = nivel;
+        if (nivel === 'concursos') { }
+        renderNav();
+    };
+
+    window.abrirConcurso = function(id) {
+        salvarEditor();
+        concursoAtualId = id;
+        const concurso = dados.concursos.find(c => c.id == id);
+        materiaAtualId = concurso?.materiaAtualId || (concurso?.materias?.[0]?.id || null);
+        assuntoAtualId = null; paginaAtualId = null;
+        navLevel = 'materias';
+        salvarTudo(); renderNav(); carregarEditor(); atualizarPreview();
+    };
+    window.abrirMateria = function(id) {
+        salvarEditor();
+        materiaAtualId = id;
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        if (concurso) concurso.materiaAtualId = id;
+        const materia = concurso?.materias?.find(m => m.id == id);
+        assuntoAtualId = materia?.assuntoAtualId || (materia?.assuntos?.[0]?.id || null);
+        paginaAtualId = null;
+        navLevel = 'assuntos';
+        salvarTudo(); renderNav(); carregarEditor(); atualizarPreview();
+    };
+    window.abrirAssunto = function(id) {
+        salvarEditor();
+        assuntoAtualId = id;
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        if (materia) materia.assuntoAtualId = id;
+        const assunto = materia?.assuntos?.find(a => a.id == id);
+        paginaAtualId = assunto?.paginaAtualId || (assunto?.paginas?.[0]?.id || null);
+        navLevel = 'paginas';
+        salvarTudo(); renderNav(); carregarEditor(); atualizarPreview(); atualizarCabecalho();
+    };
+    window.abrirPagina = function(id) {
+        salvarEditor();
+        paginaAtualId = id;
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        if (assunto) assunto.paginaAtualId = id;
+        salvarTudo(); renderNav(); carregarEditor(); atualizarCabecalho();
+        toast("📅 Página aberta");
+        document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.renomearConcurso = function(id) { const c = dados.concursos.find(c=>c.id==id); if(!c) return; let n = prompt("Renomear:", c.nome); if(n){ c.nome = n.trim(); salvarTudo(); renderNav(); atualizarCabecalho(); } };
+    window.excluirConcurso = function(id) { if(!confirm("Excluir?")) return; dados.concursos = dados.concursos.filter(c=>c.id!=id); dados.flashcards = dados.flashcards.filter(f=>f.concursoId!=id); if(concursoAtualId==id){ concursoAtualId = null; materiaAtualId = null; assuntoAtualId = null; paginaAtualId = null; navLevel = 'concursos'; } salvarTudo(); renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); };
+    function adicionarConcurso() { let nome = prompt("Nome do concurso:"); if(!nome) return; dados.concursos.push({ id: Date.now(), nome: nome.trim(), materias: [], materiaAtualId: null }); salvarTudo(); renderNav(); }
+
+    window.renomearMateria = function(id) { const concurso = dados.concursos.find(c => c.id == concursoAtualId); const m = concurso?.materias.find(m=>m.id==id); if(!m) return; let n = prompt("Renomear:", m.nome); if(n){ m.nome = n.trim(); salvarTudo(); renderNav(); atualizarCabecalho(); } };
+    window.excluirMateria = function(id) { if(!confirm("Excluir?")) return; const concurso = dados.concursos.find(c => c.id == concursoAtualId); if(!concurso) return; concurso.materias = concurso.materias.filter(m => m.id != id); dados.flashcards = dados.flashcards.filter(f => !(f.concursoId == concursoAtualId && f.materiaId == id)); if(concurso.materiaAtualId == id) concurso.materiaAtualId = null; if(materiaAtualId == id) { materiaAtualId = null; assuntoAtualId = null; paginaAtualId = null; navLevel = 'materias'; } salvarTudo(); renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); };
+    function adicionarMateria() { if(!concursoAtualId){ alert("Selecione um concurso"); return; } let nome = prompt("Nome da matéria:"); if(!nome) return; const concurso = dados.concursos.find(c => c.id == concursoAtualId); const nova = { id: Date.now(), nome: nome.trim(), assuntos: [], assuntoAtualId: null }; if(!concurso.materias) concurso.materias = []; concurso.materias.push(nova); salvarTudo(); renderNav(); }
+
+    window.renomearAssunto = function(id) { const concurso = dados.concursos.find(c => c.id == concursoAtualId); const materia = concurso?.materias?.find(m => m.id == materiaAtualId); const a = materia?.assuntos?.find(a=>a.id==id); if(!a) return; let n = prompt("Nome:", a.nome); if(n){ a.nome = n.trim(); salvarTudo(); renderNav(); atualizarCabecalho(); } };
+    window.excluirAssunto = function(id) { if(!confirm("Excluir?")) return; const concurso = dados.concursos.find(c => c.id == concursoAtualId); const materia = concurso?.materias?.find(m => m.id == materiaAtualId); if(!materia) return; materia.assuntos = materia.assuntos.filter(a => a.id != id); dados.flashcards = dados.flashcards.filter(f => !(f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == id)); if(materia.assuntoAtualId == id) materia.assuntoAtualId = null; if(assuntoAtualId == id) { assuntoAtualId = null; paginaAtualId = null; navLevel = 'assuntos'; } salvarTudo(); renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); };
+    function adicionarAssunto() { if(!concursoAtualId || !materiaAtualId){ alert("Selecione concurso e matéria"); return; } let nome = prompt("Nome do assunto:"); if(!nome) return; const concurso = dados.concursos.find(c => c.id == concursoAtualId); const materia = concurso?.materias?.find(m => m.id == materiaAtualId); const novo = { id: Date.now(), nome: nome.trim(), paginas: [], paginaAtualId: null }; if(!materia.assuntos) materia.assuntos = []; materia.assuntos.push(novo); salvarTudo(); renderNav(); }
+
+    window.renomearPagina = function(id) {
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        const p = assunto?.paginas?.find(p => p.id == id); if (!p) return;
+        let novoTitulo = prompt("Título da página:", p.titulo); if (novoTitulo === null) return;
+        let dataAtual = new Date(p.data).toISOString().slice(0,10);
+        let novaData = prompt("Data da página (AAAA-MM-DD):", dataAtual); if (novaData === null) return;
+        p.titulo = novoTitulo.trim() || p.titulo;
+        const parsed = new Date(novaData + 'T12:00:00');
+        if (!isNaN(parsed)) p.data = parsed.toISOString();
+        salvarTudo(); renderNav(); atualizarCabecalho(); toast("✏️ Página atualizada");
+    };
+    window.excluirPagina = function(id) {
+        if (!confirm("Excluir esta página de estudo?")) return;
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        if (!assunto) return;
+        assunto.paginas = (assunto.paginas || []).filter(p => p.id != id);
+        if (assunto.paginaAtualId == id) assunto.paginaAtualId = assunto.paginas[0]?.id || null;
+        if (paginaAtualId == id) paginaAtualId = assunto.paginaAtualId;
+        salvarTudo(); renderNav(); carregarEditor(); atualizarCabecalho();
+    };
+    function adicionarPagina() {
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) { alert("Selecione concurso, matéria e assunto primeiro"); return; }
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        if (!assunto) return;
+        const hoje = new Date().toISOString().slice(0,10);
+        let dataStr = prompt("Data da página (AAAA-MM-DD):", hoje);
+        if (dataStr === null) return;
+        const parsed = new Date(dataStr + 'T12:00:00');
+        if (!assunto.paginas) assunto.paginas = [];
+        const dataValida = isNaN(parsed) ? hoje : dataStr;
+        const numeroPagina = assunto.paginas.filter(p => new Date(p.data).toISOString().slice(0, 10) === dataValida).length + 1;
+        const tituloPadrao = `${dataValida} · Pág. ${numeroPagina}`;
+        let titulo = prompt("Título da página:", tituloPadrao);
+        if (titulo === null) return;
+        const novaPagina = { id: Date.now(), titulo: titulo.trim() || tituloPadrao, data: isNaN(parsed) ? new Date().toISOString() : parsed.toISOString(), cadernoHTML: '' };
+        assunto.paginas.push(novaPagina);
+        assunto.paginaAtualId = novaPagina.id;
+        paginaAtualId = novaPagina.id;
+        salvarTudo(); renderNav(); carregarEditor(); atualizarCabecalho();
+        toast("📅 Nova página criada!");
+        document.getElementById('editor').focus();
+    }
+
+    document.getElementById('btnNovoItem').onclick = () => {
+        if (navLevel === 'concursos') adicionarConcurso();
+        else if (navLevel === 'materias') adicionarMateria();
+        else if (navLevel === 'assuntos') adicionarAssunto();
+        else if (navLevel === 'paginas') adicionarPagina();
+    };
+
+    function carregarEditor() {
+        const editor = document.getElementById('editor');
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId || !paginaAtualId) { editor.innerHTML = ""; editor.setAttribute('contenteditable', 'false'); undoStack = []; redoStack = []; atualizarContadorPalavras(); return; }
+        editor.setAttribute('contenteditable', 'true');
+        const concurso = dados.concursos.find(c => c.id == concursoAtualId);
+        const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
+        const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
+        const pagina = assunto?.paginas?.find(p => p.id == paginaAtualId);
+        editor.innerHTML = (pagina && pagina.cadernoHTML) ? pagina.cadernoHTML : "";
+        undoStack = [editor.innerHTML]; redoStack = [];
+        atualizarCabecalho(); atualizarContadorPalavras();
+        setTimeout(async () => { await renovarUrlsImagens(editor); iniciarImagens(); const scrollPos = localStorage.getItem(`scroll_${concursoAtualId}_${materiaAtualId}_${assuntoAtualId}_${paginaAtualId}`); if (scrollPos) editor.scrollTop = parseInt(scrollPos); }, 100);
+    }
+
+    function atualizarCabecalho() {
+        const c = dados.concursos.find(c=>c.id==concursoAtualId); const m = c?.materias?.find(m=>m.id==materiaAtualId); const a = m?.assuntos?.find(a=>a.id==assuntoAtualId);
+        const p = a?.paginas?.find(p=>p.id==paginaAtualId);
+        document.getElementById('nomeConcurso').innerText = c?.nome||"—";
+        document.getElementById('nomeMateria').innerText = m?.nome||"—";
+        document.getElementById('nomeAssunto').innerText = a ? `${a.nome}${p ? ' · ' + formatarData(p.data) + ' · ' + p.titulo : ''}` : "—";
+    }
+
+    let dragOrigem = null;
+
+    // ==================== FLASHCARDS/ESTUDO/CRONOGRAMA (inalterados na lógica) ====================
+
+    function getDiasRestante(dataProxima) { const hoje = new Date(); hoje.setHours(0,0,0,0); const prox = new Date(dataProxima); prox.setHours(0,0,0,0); return Math.ceil((prox - hoje) / (1000 * 60 * 60 * 24)); }
+    const siteFlashcards = 'https://caiomascedo.github.io/flashcard/';
+
+    function criarLinkDoFlashcard(card) {
+        const concurso = dados.concursos.find(c => c.id == card.concursoId);
+        const materia = concurso?.materias?.find(m => m.id == card.materiaId);
+        const assunto = materia?.assuntos?.find(a => a.id == card.assuntoId);
+        const payload = {
+            versao: 1,
+            idImportacao: card.origemImportacao || '',
+            concurso: concurso?.nome || '',
+            materia: materia?.nome || '',
+            assunto: assunto?.nome || '',
+            pergunta: card.pergunta || '',
+            resposta: card.resposta || ''
+        };
+        const codificado = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const base = String(card.siteOrigem || siteFlashcards).split('#')[0];
+        return `${base}#abrir-card=${codificado}`;
+    }
+
+    window.abrirNoSiteFlashcards = function(id) {
+        const card = dados.flashcards.find(f => f.id == id);
+        if (!card?.origemImportacao) {
+            toast('ℹ️ Este card foi criado no Caderno e não possui um original no site de Flashcards.');
+            return;
+        }
+        if (integrado) {
+            salvarEditor();
+            window.parent.postMessage({ tipo: 'caderno:abrir-original', idImportacao: card.origemImportacao }, location.origin);
+            return;
+        }
+        const destino = criarLinkDoFlashcard(card);
+        const aba = window.open(destino, '_blank');
+        if (!aba) window.location.href = destino;
+    };
+
+    function atualizarPreview() {
+        const preview = document.getElementById('previewFlashcard');
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) { preview.innerHTML = ""; return; }
+        const cards = dados.flashcards.filter(f => f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == assuntoAtualId);
+        if (!cards.length) { preview.innerHTML = "Nenhum flashcard"; return; }
+        preview.innerHTML = cards.map(c => { const dias = getDiasRestante(c.proxima_revisao); const badgeClass = dias <= 0 ? 'urgent' : (dias === 1 ? 'today' : ''); const badgeText = dias <= 0 ? '⚠️ Vencido' : (dias === 1 ? '📅 Hoje' : `📅 em ${dias} dias`); const origem = c.origemImportacao ? `<button onclick="event.stopPropagation(); abrirNoSiteFlashcards(${c.id})" class="text-xs text-purple-700" title="Abrir este card no site de Flashcards">🧠 Flashcard</button>` : ''; return `<div class="flashcard-item cursor-pointer" onclick="editarFlashcard(${c.id})"><div class="flashcard-header"><div class="font-bold text-sm truncate">📌 ${escapar(c.pergunta)}</div><span class="revisao-badge ${badgeClass}">${badgeText}</span></div><div class="flex justify-end gap-2 mt-1">${origem}<button onclick="event.stopPropagation(); editarFlashcard(${c.id})" class="text-xs text-blue-600">✏️</button><button onclick="event.stopPropagation(); excluirFlashcard(${c.id})" class="text-xs text-red-600">🗑️</button></div></div>`; }).join('');
+    }
+    window.editarFlashcard = function(id) { const card = dados.flashcards.find(f=>f.id==id); if(!card) return; editandoFlashcardId = id; document.getElementById('inputPergunta').value = card.pergunta; document.getElementById('inputResposta').value = card.resposta; document.getElementById('inputTags').value = (card.tags || []).join(', '); abrirModal('modalFlashcard'); };
+    window.excluirFlashcard = function(id) { if(confirm("Excluir?")) { dados.flashcards = dados.flashcards.filter(f=>f.id!=id); salvarTudo(); atualizarPreview(); atualizarStats(); toast("🗑️ Excluído"); } };
+    function criarFlashcard() { if(!concursoAtualId || !materiaAtualId || !assuntoAtualId){ alert("Selecione concurso, matéria e assunto"); return; } const sel = window.getSelection().toString().trim(); let pergunta = sel, resposta = ""; if(sel.includes("::")) { let partes = sel.split("::"); pergunta = partes[0].trim(); resposta = partes.slice(1).join("::").trim(); } editandoFlashcardId = null; document.getElementById('inputPergunta').value = pergunta; document.getElementById('inputResposta').value = resposta; document.getElementById('inputTags').value = ''; abrirModal('modalFlashcard'); setTimeout(() => document.getElementById(pergunta ? 'inputResposta' : 'inputPergunta').focus(), 50); }
+    function salvarFlashcard() { const p = document.getElementById('inputPergunta').value.trim(); const r = document.getElementById('inputResposta').value.trim(); const tagsStr = document.getElementById('inputTags').value.trim(); const tags = tagsStr ? tagsStr.split(',').map(t=>t.trim()).filter(t=>t) : []; if(!p || !r){ alert("Preencha"); return; } if(editandoFlashcardId) { const card = dados.flashcards.find(f=>f.id==editandoFlashcardId); if(card) { card.pergunta = p; card.resposta = r; card.tags = tags; salvarTudo(); atualizarPreview(); toast("✅ Atualizado!"); } } else { dados.flashcards.push({ id: Date.now(), concursoId: concursoAtualId, materiaId: materiaAtualId, assuntoId: assuntoAtualId, pergunta: p, resposta: r, tags: tags, intervalo: 0, repeticoes: 0, facilidade: 2.5, proxima_revisao: new Date().toISOString() }); salvarTudo(); atualizarPreview(); atualizarStats(); toast("✨ Flashcard criado!"); } fecharModal('modalFlashcard'); }
+    document.getElementById('btnCriarFlashcard').onclick = criarFlashcard;
+    document.getElementById('modalCancelar').onclick = () => fecharModal('modalFlashcard');
+    document.getElementById('modalSalvar').onclick = salvarFlashcard;
+
+    function iniciarEstudo() { iniciarEstudoGeral(); }
+    function mostrarCard() { 
+        if (studyIdx >= studyQueue.length) { document.getElementById('estudoConteudo').innerHTML = `<div class="study-shell rounded-2xl p-8 text-center my-auto"><div class="text-5xl mb-4">🎉</div><h3 class="text-2xl font-bold text-green-700 mb-2">Revisão concluída!</h3><p class="text-gray-600 mb-5">Você revisou ${studySessionTotal} flashcard(s) nesta sessão.</p><button onclick="document.getElementById('fecharEstudo').click()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold">✅ Finalizar</button></div>`; estudoModalAberto = false; atualizarStats(); return; } 
+        const card = studyQueue[studyIdx]; estudoFlipped = false; respostaEmAndamento = false;
+        const percentualSessao = studySessionTotal ? Math.round((studyIdx / studySessionTotal) * 100) : 0;
+        const botaoOrigem = card.origemImportacao ? `<button onclick="abrirNoSiteFlashcards(${card.id})" class="mt-3 bg-indigo-600 text-white py-2 rounded-xl text-sm w-full">🧠 Abrir no site de Flashcards</button>` : '';
+        document.getElementById('estudoConteudo').innerHTML = `<div class="study-shell rounded-2xl p-3 mb-3"><div class="flex justify-between text-xs font-bold text-gray-600 mb-2"><span>🧠 ${studyIdx+1} de ${studySessionTotal}</span><span>${percentualSessao}%</span></div><div class="study-progress"><div style="width:${percentualSessao}%"></div></div></div><div class="relative w-full aspect-[4/3] mb-4 cursor-pointer" onclick="virarCard()"><div class="card-inner w-full h-full" id="estudoInner"><div class="front study-front p-5 rounded-2xl flex flex-col items-center justify-center text-center"><div class="study-label">❓ Pergunta</div><div class="text-xl font-bold leading-relaxed">${escapar(card.pergunta)}</div><div class="text-sm text-green-700 font-semibold mt-5">Toque para revelar ✨</div></div><div class="back study-back p-5 rounded-2xl flex flex-col items-center justify-center text-center"><div class="study-label">✅ Resposta revelada</div><div class="study-answer text-lg font-semibold leading-relaxed mb-3">${escapar(card.resposta)}</div></div></div></div><div id="botoesDif" class="hidden grid grid-cols-3 gap-3 mt-2"><button onclick="responder(2)" class="study-rate bg-red-500 p-3 rounded-xl text-white font-bold">🔴 Difícil</button><button onclick="responder(3)" class="study-rate bg-orange-500 p-3 rounded-xl text-white font-bold">🟠 Médio</button><button onclick="responder(4)" class="study-rate bg-green-500 p-3 rounded-xl text-white font-bold">🟢 Fácil</button></div><div id="feedbackResposta"></div>${botaoOrigem}<button id="estudoBtnVoz" class="mt-3 bg-purple-600 text-white py-2 rounded-xl text-sm w-full">🎤 Responder por Voz</button>`;
+        const quadroEstudo = document.querySelector('#estudoInner')?.parentElement;
+        const textoGrande = (card.pergunta.length + card.resposta.length + (card.dica || '').length) > 420;
+        if (quadroEstudo && textoGrande) { quadroEstudo.classList.remove('aspect-[4/3]'); quadroEstudo.style.minHeight = '540px'; }
+        document.querySelectorAll('#estudoInner .front, #estudoInner .back').forEach(face => face.classList.add('overflow-y-auto'));
+        document.querySelectorAll('#estudoInner .text-xs').forEach(ajuda => ajuda.remove());
+        [...document.querySelectorAll('#estudoConteudo > div')].find(elemento => elemento.textContent.startsWith('Restam '))?.remove();
+        if (card.dica) document.querySelector('#estudoInner .back').insertAdjacentHTML('beforeend', `<div class="text-sm text-amber-800 mt-2 leading-relaxed">💡 ${escapar(card.dica)}</div>`);
+        document.getElementById('estudoInner').classList.remove('flipped'); document.getElementById('botoesDif').classList.add('hidden');
+        document.getElementById('estudoBtnVoz').onclick = () => { iniciarReconhecimentoVoz((texto) => { const cardAtual = studyQueue[studyIdx]; if(cardAtual.resposta.toLowerCase().includes(texto.toLowerCase()) || texto.toLowerCase().includes(cardAtual.resposta.toLowerCase())) { toast("✅ Correta!"); responder(4, true); } else { toast(`❌ Resposta: ${cardAtual.resposta.substring(0,50)}...`); } }); };
+    }
+    window.virarCard = function() { const inner = document.getElementById('estudoInner'); const botoes = document.getElementById('botoesDif'); estudoFlipped = !estudoFlipped; inner.classList.toggle('flipped', estudoFlipped); botoes.classList.toggle('hidden', !estudoFlipped); };
+    window.responder = function(qualidade, permitirSemVirar = false) { if (respostaEmAndamento) return; if (!estudoFlipped && !permitirSemVirar) { toast('👆 Revele a resposta antes de avaliar.'); return; } const card = studyQueue[studyIdx]; const original = dados.flashcards.find(f => f.id === card.id); if (!original) return; respostaEmAndamento = true; original.ultima_revisao = new Date().toISOString(); if (qualidade < 3) { original.repeticoes = 0; original.intervalo = 1; } else { if (original.repeticoes === 0) original.intervalo = 1; else if (original.repeticoes === 1) original.intervalo = 6; else original.intervalo = Math.round(original.intervalo * original.facilidade); original.repeticoes++; } const ajuste = 0.1 - (5 - qualidade) * (0.08 + (5 - qualidade) * 0.02); original.facilidade = Math.max(1.3, original.facilidade + ajuste); const novaData = new Date(); novaData.setDate(novaData.getDate() + original.intervalo); original.proxima_revisao = novaData.toISOString(); salvarTudo(); const mensagens = qualidade < 3 ? ['hard','💪 Vamos reforçar amanhã!'] : qualidade === 3 ? ['medium','👏 Bom trabalho! Continue firme.'] : ['easy','🌟 Mandou muito bem!']; const feedback = document.getElementById('feedbackResposta'); if (feedback) feedback.innerHTML = `<div class="study-feedback ${mensagens[0]}">${mensagens[1]}</div>`; setTimeout(() => { studyIdx++; mostrarCard(); atualizarStats(); atualizarPreview(); }, 450); };
+    document.getElementById('btnEstudar').onclick = iniciarEstudo;
+    document.getElementById('fecharEstudo').onclick = () => { fecharModal('modalEstudo'); estudoModalAberto = false; };
+
+    function renderCronograma() {
+        const div = document.getElementById('listaTarefas');
+        if (!cronograma.length) { div.innerHTML = '<div class="text-gray-400 text-center p-4">Vazio</div>'; return; }
+        const ordenado = [...cronograma].sort((a,b)=>a.hora.localeCompare(b.hora));
+        div.innerHTML = ordenado.map((t,i)=>`<div class="crono-tarefa flex justify-between items-center p-2"><span><span class="font-mono">${t.hora}</span> ${escapar(t.descricao)}</span><div><button onclick="editarTarefa(${i})" class="text-xs bg-gray-200 px-2 py-1 rounded">✏️</button><button onclick="excluirTarefa(${i})" class="text-xs bg-red-100 px-2 py-1 rounded ml-1">🗑️</button><button onclick="estudarTarefa(${i})" class="text-xs bg-purple-500 text-white px-2 py-1 rounded ml-1">📖 Estudar</button></div></div>`).join('');
+    }
+    window.estudarTarefa = function(i) {
+        const tarefa = cronograma[i];
+        if (tarefa.tipo === 'flashcard' || tarefa.descricao.toLowerCase().includes('flashcard') || tarefa.descricao.toLowerCase().includes('revisar')) {
+            if (concursoAtualId && materiaAtualId && assuntoAtualId) {
+                iniciarEstudoGeral();
+            } else {
+                alert("Selecione um concurso, matéria e assunto primeiro");
+            }
+        } else {
+            toast(`📚 Estude: ${tarefa.descricao}`);
+        }
+    };
+    function adicionarTarefa() { const hora = document.getElementById('novaHora').value; const desc = document.getElementById('novaDesc').value.trim(); const tipo = document.getElementById('novoTipo').value; if (!desc) { alert("Digite"); return; } cronograma.push({ hora, descricao: desc, tipo }); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); document.getElementById('novaDesc').value = ''; toast("✅ Adicionada"); }
+    window.editarTarefa = function(i) { const t = cronograma[i]; const nh = prompt("Horário:", t.hora); if (!nh) return; const nd = prompt("Descrição:", t.descricao); if (nd===null) return; t.hora = nh; t.descricao = nd; localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); };
+    window.excluirTarefa = function(i) { if(confirm("Remover?")){ cronograma.splice(i,1); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); } };
+    document.getElementById('btnCronograma').onclick = () => { renderCronograma(); abrirModal('modalCronograma'); };
+    document.getElementById('fecharCronograma').onclick = () => fecharModal('modalCronograma');
+    document.getElementById('btnAdicionarTarefa').onclick = adicionarTarefa;
+
+    document.getElementById('btnLimparCaderno').onclick = () => abrirModal('modalConfirmacao');
+    document.getElementById('confirmacaoCancelar').onclick = () => { fecharModal('modalConfirmacao'); document.getElementById('confirmacaoInput').value = ''; };
+    document.getElementById('confirmacaoOk').onclick = () => { if(document.getElementById('confirmacaoInput').value === 'CONFIRMAR') { saveState(); document.getElementById('editor').innerHTML = ""; salvarEditor(); saveState(); toast("🗑️ Caderno limpo"); fecharModal('modalConfirmacao'); document.getElementById('confirmacaoInput').value = ''; } else alert('Digite "CONFIRMAR"'); };
+
+    document.getElementById('btnSincDrive').onclick = () => { const data = JSON.stringify({ dados, cronograma }, null, 2); const blob = new Blob([data], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup_caderno_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`; a.click(); URL.revokeObjectURL(a.href); toast("💾 Backup local"); };
+    document.getElementById('btnExportar').onclick = () => { const data = JSON.stringify({ dados, cronograma }, null, 2); const blob = new Blob([data], {type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`caderno_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href); toast("📁 Exportado"); };
+    document.getElementById('btnImportar').onclick = () => document.getElementById('inputImportar').click();
+    document.getElementById('inputImportar').onchange = (e) => { if(e.target.files[0]) { const reader = new FileReader(); reader.onload = (ev) => { try { const imp = JSON.parse(ev.target.result); if (imp.dados && imp.cronograma) { dados = imp.dados; cronograma = imp.cronograma; migrarDados(); salvarTudo(); localStorage.setItem('cronograma', JSON.stringify(cronograma)); if (integrado) window.CadernoIntegrado.recarregar(); else location.reload(); } else throw new Error(); } catch { alert("Inválido"); } }; reader.readAsText(e.target.files[0]); } e.target.value=''; };
+
+    function toggleSection(sectionId) {
+        const content = document.getElementById(`section${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)}`);
+        const btn = document.querySelector(`.toggle-btn[data-section="${sectionId}"]`);
+        if (!content || !btn) return;
+        if (content.classList.contains('minimized')) { content.classList.remove('minimized'); btn.textContent = '−'; }
+        else { content.classList.add('minimized'); btn.textContent = '+'; }
+        let estado = JSON.parse(localStorage.getItem('minimizado') || '{}'); estado[sectionId] = content.classList.contains('minimized'); localStorage.setItem('minimizado', JSON.stringify(estado));
+    }
+    function initMinimizado() {
+        const salvo = localStorage.getItem('minimizado');
+        const estado = JSON.parse(salvo || '{}');
+        if (!salvo && window.innerWidth <= 768) { estado.estatisticas = true; estado.pendencias = true; localStorage.setItem('minimizado', JSON.stringify(estado)); }
+        ['flashcards', 'estatisticas', 'pendencias'].forEach(s => { const content = document.getElementById(`section${s.charAt(0).toUpperCase() + s.slice(1)}`); const btn = document.querySelector(`.toggle-btn[data-section="${s}"]`); if (content && estado[s]) { content.classList.add('minimized'); if (btn) btn.textContent = '+'; } });
+    }
+    document.querySelectorAll('.section-header').forEach(h => { const secao = h.getAttribute('data-section'); h.addEventListener('click', (e) => { if (e.target.classList && e.target.classList.contains('toggle-btn')) return; toggleSection(secao); }); const btn = h.querySelector('.toggle-btn'); if (btn) { btn.addEventListener('click', (e) => { e.stopPropagation(); toggleSection(secao); }); } });
+    document.getElementById('btnIrPastas').onclick = () => { salvarEditor(); navLevel = 'concursos'; renderNav(); document.getElementById('painelPastas').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+    if (!dados.concursos.length) { dados.concursos = [{ id: 1, nome: "PMPI", materias: [{ id: 11, nome: "Português", assuntos: [{ id: 111, nome: "Concordância", paginas: [{ id: 1110, titulo: "Página 1", data: new Date().toISOString(), cadernoHTML: "<p>Exemplo. <strong>Negrito</strong> e <em>itálico</em> funcionam!</p>" }], paginaAtualId: 1110 }], assuntoAtualId: 111 }], materiaAtualId: 11 }]; dados.flashcards = [{ id: 1001, concursoId: 1, materiaId: 11, assuntoId: 111, pergunta: "O que é concordância?", resposta: "Verbo concorda com o sujeito.", tags: ["gramática"], intervalo: 0, repeticoes: 0, facilidade: 2.5, proxima_revisao: new Date().toISOString() }]; salvarTudo(); }
+    if (!cronograma.length) { cronograma = [{ hora: "08:00", descricao: "Resolver questões", tipo: "questoes" }, { hora: "14:00", descricao: "Revisar flashcards", tipo: "flashcard" }]; localStorage.setItem('cronograma', JSON.stringify(cronograma)); }
+
+    migrarDados();
+
+    concursoAtualId = dados.concursos[0]?.id || null;
+    if (concursoAtualId) {
+        const p = dados.concursos[0];
+        materiaAtualId = p.materiaAtualId || p.materias[0]?.id || null;
+        if (materiaAtualId) {
+            const m = p.materias.find(m=>m.id==materiaAtualId);
+            assuntoAtualId = m?.assuntoAtualId || m?.assuntos[0]?.id || null;
+            if (assuntoAtualId) {
+                const a = m.assuntos.find(a=>a.id==assuntoAtualId);
+                paginaAtualId = a?.paginaAtualId || a?.paginas?.[0]?.id || null;
+            }
+        }
+    }
+    navLevel = 'concursos';
+
+    function lerImportacaoDeFlashcard() {
+        const prefixo = '#importar-card=';
+        if (!location.hash.startsWith(prefixo)) return null;
+        try {
+            const base64 = location.hash.slice(prefixo.length).replace(/-/g, '+').replace(/_/g, '/');
+            const json = decodeURIComponent(escape(atob(base64)));
+            const card = JSON.parse(json);
+            if (!card?.idImportacao || !card?.pergunta || !card?.resposta) throw new Error('Dados incompletos');
+            return card;
+        } catch (erro) {
+            console.error('Importação de flashcard inválida:', erro);
+            toast('❌ Não foi possível ler o flashcard recebido.');
+            history.replaceState(null, '', location.pathname + location.search);
+            return null;
+        }
+    }
+
+    function encontrarOuCriar(lista, nome, criar) {
+        const nomeSeguro = String(nome || '').trim() || 'Sem classificação';
+        let item = (lista || []).find(atual => String(atual.nome || '').trim().toLocaleLowerCase('pt-BR') === nomeSeguro.toLocaleLowerCase('pt-BR'));
+        if (!item) {
+            item = criar(nomeSeguro);
+            lista.push(item);
+        }
+        return item;
+    }
+
+    let importacaoPendente = null;
+
+    async function importarFlashcardRecebido(recebidoPorMensagem = null) {
+        const recebido = recebidoPorMensagem || importacaoPendente || lerImportacaoDeFlashcard();
+        if (!recebido) return;
+        if (!recebido.idImportacao || !recebido.pergunta || !recebido.resposta) { toast('❌ Flashcard recebido é inválido.'); return; }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && !sincronizacaoInicialConcluida) {
+            importacaoPendente = recebido;
+            setTimeout(importarFlashcardRecebido, 450);
+            return;
+        }
+
+        salvarEditor();
+        const cardExistente = dados.flashcards.find(card => card.origemImportacao === recebido.idImportacao);
+        const cardJaExiste = !!cardExistente;
+        if (cardExistente && recebido.siteOrigem) cardExistente.siteOrigem = recebido.siteOrigem;
+
+        dados.concursos = Array.isArray(dados.concursos) ? dados.concursos : [];
+        const concurso = encontrarOuCriar(dados.concursos, recebido.concurso, nome => ({ id: Date.now(), nome, materias: [], materiaAtualId: null }));
+        concurso.materias = Array.isArray(concurso.materias) ? concurso.materias : [];
+        const materia = encontrarOuCriar(concurso.materias, recebido.materia, nome => ({ id: Date.now(), nome, assuntos: [], assuntoAtualId: null }));
+        materia.assuntos = Array.isArray(materia.assuntos) ? materia.assuntos : [];
+        const assunto = encontrarOuCriar(materia.assuntos, recebido.assunto, nome => ({ id: Date.now(), nome, paginas: [], paginaAtualId: null }));
+        assunto.paginas = Array.isArray(assunto.paginas) ? assunto.paginas : [];
+
+        const topico = String(recebido.topico || '').trim();
+        const tituloPagina = `${topico || assunto.nome} · Flashcards`;
+        const tituloAntigo = topico ? `Flashcards — ${topico}` : 'Flashcards importados';
+        let pagina = assunto.paginas.find(atual => atual.titulo === tituloPagina || atual.titulo === tituloAntigo);
+        if (!pagina) {
+            pagina = { id: Date.now(), titulo: tituloPagina, data: new Date().toISOString(), cadernoHTML: '' };
+            assunto.paginas.push(pagina);
+        } else if (pagina.titulo === tituloAntigo) pagina.titulo = tituloPagina;
+
+        const tags = [recebido.concurso, recebido.materia, recebido.assunto, recebido.topico, recebido.nivel].filter(Boolean);
+        if (!cardJaExiste) {
+            dados.flashcards.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                concursoId: concurso.id,
+                materiaId: materia.id,
+                assuntoId: assunto.id,
+                pergunta: recebido.pergunta,
+                resposta: recebido.resposta,
+                dica: recebido.dica || '',
+                tags,
+                origemImportacao: recebido.idImportacao,
+                siteOrigem: recebido.siteOrigem || '',
+                intervalo: 0,
+                repeticoes: 0,
+                facilidade: 2.5,
+                proxima_revisao: new Date().toISOString()
+            });
+        }
+
+        const perguntaSegura = escapar(recebido.pergunta);
+        const dicaLimpa = String(recebido.dica || '').replace(/^\s*💡\s*/, '');
+        const dica = dicaLimpa ? `<p><strong>💡 Dica:</strong> ${escapar(dicaLimpa)}</p>` : '';
+        const caminho = [recebido.concurso, recebido.materia, recebido.assunto, topico].filter(Boolean).map(escapar).join(' › ');
+        const blocoDoCard = `<section class="flashcard-importado" data-importacao="${escapar(recebido.idImportacao)}"><p><strong>📂 ${caminho}</strong></p><h3>🧠 ${perguntaSegura}</h3><p><strong>Resposta:</strong> ${escapar(recebido.resposta)}</p>${dica}</section>`;
+        const documento = new DOMParser().parseFromString(`<div id="importados">${pagina.cadernoHTML || ''}</div>`, 'text/html');
+        const raizImportados = documento.getElementById('importados');
+        let jaEstaNaPagina = false;
+        raizImportados.querySelectorAll('section.flashcard-importado').forEach(secao => {
+            const titulo = secao.querySelector('h3')?.textContent?.replace(/^🧠\s*/, '').trim();
+            if (titulo !== recebido.pergunta.trim()) return;
+            if (jaEstaNaPagina) secao.remove();
+            else { secao.outerHTML = blocoDoCard; jaEstaNaPagina = true; }
+        });
+        pagina.cadernoHTML = raizImportados.innerHTML;
+        if (!jaEstaNaPagina) {
+            pagina.cadernoHTML = `${pagina.cadernoHTML || ''}${blocoDoCard}`;
+        }
+        concurso.materiaAtualId = materia.id;
+        materia.assuntoAtualId = assunto.id;
+        assunto.paginaAtualId = pagina.id;
+        concursoAtualId = concurso.id;
+        materiaAtualId = materia.id;
+        assuntoAtualId = assunto.id;
+        paginaAtualId = pagina.id;
+        navLevel = 'paginas';
+        salvarTudo();
+        renderNav();
+        carregarEditor();
+        atualizarPreview();
+        importacaoPendente = null;
+        history.replaceState(null, '', location.pathname + location.search);
+        toast(cardJaExiste ? '📓 Este flashcard já está no Caderno.' : '📓 Flashcard salvo no Caderno.');
+    }
+
+    window.addEventListener('message', event => {
+        const origemPermitida = event.origin === 'https://caiomascedo.github.io' || event.origin === 'null';
+        if (!origemPermitida || event.data?.tipo !== 'flashcards:importar') return;
+        importacaoPendente = event.data.card;
+        importarFlashcardRecebido(event.data.card);
+    });
+
+    renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias();
+    saveState(); initMinimizado(); setupUndoObserver(); initDarkMode();
+    setTimeout(importarFlashcardRecebido, 1200);
+    
+    document.getElementById('statsHeader').onclick = iniciarEstudoPendentes;
+    
+    window.addEventListener('beforeunload', () => { if (concursoAtualId && materiaAtualId && assuntoAtualId && paginaAtualId) { const editor = document.getElementById('editor'); localStorage.setItem(`scroll_${concursoAtualId}_${materiaAtualId}_${assuntoAtualId}_${paginaAtualId}`, editor.scrollTop); } });
+})();
+
+// ==================== SUPABASE ====================
+if (supabaseOk) {
+    const loginModal = document.getElementById('loginModal');
+    function abrirLoginModal() { loginModal.classList.add('open'); }
+    function fecharLoginModal() { loginModal.classList.remove('open'); }
+    document.getElementById('userAvatar').onclick = integrado ? () => toast('A mesma conta dos Flashcards está conectada.') : abrirLoginModal;
+    document.getElementById('closeLoginModal').onclick = fecharLoginModal;
+    loginModal.onclick = (e) => { if (e.target === loginModal) fecharLoginModal(); };
+    
+    let salvamentoNuvemTimer = null;
+    let salvamentoEmAndamento = false;
+    let salvamentoPendente = false;
+
+    async function salvarDadosNaNuvem(silencioso = false) {
+        if (salvamentoEmAndamento) { salvamentoPendente = true; return; }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { if (!silencioso) toast("Faça login"); return; }
+        salvamentoEmAndamento = true;
+        try {
+            const dados = JSON.parse(localStorage.getItem('dados_concursos')) || { concursos: [], flashcards: [] };
+            const cronograma = JSON.parse(localStorage.getItem('cronograma')) || [];
+            const agora = new Date().toISOString();
+            const { error } = await supabase.from('cadernos').upsert({
+                user_id: user.id,
+                dados,
+                cronograma,
+                nome: user.user_metadata?.full_name || user.email,
+                updated_at: agora
+            }, { onConflict: 'user_id' });
+            if (error) throw error;
+            localStorage.setItem('caderno_local_updated_at', agora);
+            if (!silencioso) toast("☁️ Salvo na nuvem!");
+        } catch(e) {
+            console.error(e);
+            if (!silencioso) toast("❌ Erro: " + e.message);
+        } finally {
+            salvamentoEmAndamento = false;
+            if (salvamentoPendente) {
+                salvamentoPendente = false;
+                setTimeout(() => salvarDadosNaNuvem(true), 250);
+            }
+        }
+    }
+
+    function agendarSalvamentoNaNuvem() {
+        if (!sincronizacaoInicialConcluida) return;
+        clearTimeout(salvamentoNuvemTimer);
+        salvamentoNuvemTimer = setTimeout(() => salvarDadosNaNuvem(true), 1200);
+    }
+
+    window.addEventListener('caderno:alterado', agendarSalvamentoNaNuvem);
+    
+    async function carregarDadosDoUsuario() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const syncKey = 'cadernoSyncDoneV2';
+        if (sessionStorage.getItem(syncKey) === user.id) {
+            sincronizacaoInicialConcluida = true;
+            avisarPronto();
+            return;
+        }
+        try {
+            const { data, error } = await supabase.from('cadernos').select('dados, cronograma, updated_at').eq('user_id', user.id).maybeSingle();
+            if (error) throw error;
+            if (data) {
+                const localAtualizado = Date.parse(localStorage.getItem('caderno_local_updated_at') || '') || 0;
+                const nuvemAtualizada = Date.parse(data.updated_at || '') || 0;
+                const localTemDados = !!localStorage.getItem('dados_concursos');
+                if (localTemDados && localAtualizado > nuvemAtualizada) {
+                    sessionStorage.setItem(syncKey, user.id);
+                    sincronizacaoInicialConcluida = true;
+                    await salvarDadosNaNuvem(true);
+                    avisarPronto();
+                    return;
+                }
+                if (data.dados) localStorage.setItem('dados_concursos', JSON.stringify(data.dados));
+                if (data.cronograma) localStorage.setItem('cronograma', JSON.stringify(data.cronograma));
+                if (data.updated_at) localStorage.setItem('caderno_local_updated_at', data.updated_at);
+                sessionStorage.setItem(syncKey, user.id);
+                sincronizacaoInicialConcluida = true;
+                toast("📥 Dados carregados!");
+                if (integrado) { window.CadernoIntegrado.recarregar(); avisarPronto(); } else location.reload();
+            } else {
+                sessionStorage.setItem(syncKey, user.id);
+                sincronizacaoInicialConcluida = true;
+                await salvarDadosNaNuvem(true);
+                avisarPronto();
+            }
+        } catch(e) {
+            console.error(e); toast("❌ Erro ao carregar: " + e.message);
+            if (integrado) window.parent.postMessage({ tipo: 'caderno:erro', mensagem: 'Não foi possível carregar o caderno da nuvem. Tente novamente.' }, location.origin);
+        }
+    }
+    
+    async function loginGoogle() { try { const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } }); if (error) throw error; } catch(e) { toast("❌ " + e.message); } }
+    async function loginEmail() { const email = document.getElementById('modalEmail').value, password = document.getElementById('modalSenha').value; if (!email || !password) { toast("Preencha"); return; } try { const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) throw error; toast("✅ Logado!"); fecharLoginModal(); await carregarDadosDoUsuario(); } catch(e) { toast("❌ " + e.message); } }
+    async function criarConta() { const email = document.getElementById('modalEmail').value, password = document.getElementById('modalSenha').value; if (!email || !password) { toast("Preencha"); return; } try { const { data, error } = await supabase.auth.signUp({ email, password }); if (error) throw error; toast(data.session ? "✅ Conta criada!" : "📧 Confira seu email para confirmar a conta"); if (data.session) { fecharLoginModal(); await carregarDadosDoUsuario(); } } catch(e) { toast("❌ " + e.message); } }
+    async function logout() { const { error } = await supabase.auth.signOut(); if (error) toast("❌ " + error.message); else toast("👋 Logout"); }
+    
+    function atualizarInterface(user) {
+        const loginForm = document.getElementById('loginForm'), loggedInActions = document.getElementById('loggedInActions'), userInfo = document.getElementById('userInfo'), userNameDisplay = document.getElementById('userNameDisplay');
+        if (user) { loginForm.classList.add('hidden'); loggedInActions.classList.remove('hidden'); userInfo.classList.remove('hidden'); userNameDisplay.innerText = user.user_metadata?.full_name || user.email || "Usuário"; document.getElementById('avatarIcon').innerHTML = "✅"; }
+        else { loginForm.classList.remove('hidden'); loggedInActions.classList.add('hidden'); userInfo.classList.add('hidden'); document.getElementById('avatarIcon').innerHTML = "👤"; document.getElementById('modalEmail').value = ''; document.getElementById('modalSenha').value = ''; }
+    }
+    
+    document.getElementById('loginGoogleBtn').onclick = loginGoogle;
+    document.getElementById('loginEmailBtn').onclick = loginEmail;
+    document.getElementById('signupBtn').onclick = criarConta;
+    document.getElementById('logoutBtn').onclick = logout;
+    document.getElementById('syncNowBtn').onclick = () => salvarDadosNaNuvem(false);
+    
+    supabase.auth.onAuthStateChange((event, session) => {
+        const user = session?.user || null;
+        atualizarInterface(user);
+        if (user && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+            if (sessionStorage.getItem('cadernoSyncDoneV2') === user.id) { sincronizacaoInicialConcluida = true; avisarPronto(); setTimeout(() => window.CadernoIntegrado.migrarImagens().catch(e => console.error('Migração de imagens:', e)), 1200); }
+            else setTimeout(() => carregarDadosDoUsuario(), 500);
+        } else if (!user) sincronizacaoInicialConcluida = false;
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && sincronizacaoInicialConcluida) salvarDadosNaNuvem(true);
+    });
+} else {
+    console.warn("Supabase não configurado: preencha SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY.");
+    document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
+}
+</script>
+</body>
+</html>
