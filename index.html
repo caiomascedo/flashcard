@@ -1951,7 +1951,7 @@
 
                 <p class="dica-navegacao-foco">Deslize ← para o próximo ou → para o anterior. Você também pode tocar nas laterais.</p>
 
-                <p class="dica-gestos-foco">1 toque: acertou · 2 rápidos: errou · 3 rápidos: desmarcar</p>
+                <p class="dica-gestos-foco">1 toque: ver resposta · 2 rápidos: acertou · 3 rápidos: errou · 4 rápidos: desmarcar</p>
 
                 <section class="recursos-card" id="recursosCard" aria-label="Conteúdo complementar" hidden>
                     <details id="leituraDetalhes">
@@ -3591,7 +3591,8 @@
             const quantidade = cliquesFoco;
             cancelarCliquesFoco();
             if (!acao || !modoFoco || flashcards[acao.indice] !== acao.card || getIndiceReal() !== acao.indice) return;
-            marcarCardPorToques(acao.indice, quantidade === 1 ? 'acertou' : quantidade === 2 ? 'errou' : 'nao');
+            if (quantidade === 1) { virarCard(); return; }
+            marcarCardPorToques(acao.indice, quantidade === 2 ? 'acertou' : quantidade === 3 ? 'errou' : 'nao');
         }
 
         function processarCliqueCard(event) {
@@ -3599,7 +3600,7 @@
             if (!total || event.target.closest('button, a, input, textarea, select, summary')) return;
             const indice = getIndiceReal();
             const card = flashcards[indice];
-            cliquesFoco = Math.min(3, cliquesFoco + 1);
+            cliquesFoco = Math.min(4, cliquesFoco + 1);
             clearTimeout(timerCliquesFoco);
             acaoCliquesFoco = { indice, card };
             timerCliquesFoco = setTimeout(finalizarCliquesFoco, 320);
