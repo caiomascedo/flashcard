@@ -175,3 +175,47 @@ def test_optional_tools_load_only_when_used(server):
   assert len(crop_requests)==1
   assert not errors, errors
   browser.close()
+
+
+@pytest.mark.parametrize('width',[390,589,1280])
+def test_selection_toolbar_stays_near_text(server,width):
+ with sync_playwright() as pw:
+  browser=pw.chromium.launch()
+  page=browser.new_page(viewport={'width':width,'height':844})
+  page.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@*/dist/umd/supabase.min.js',lambda route:route.fulfill(body=MOCK,content_type='application/javascript'))
+  page.route('https://i.postimg.cc/**',lambda route:route.abort())
+  page.goto(server)
+  page.wait_for_function("!document.getElementById('cadernoIntegradoFrame').hidden")
+  page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
+  frame=page.frame_locator('#cadernoIntegradoFrame')
+  iframe=page.locator('#cadernoIntegradoFrame').element_handle().content_frame()
+  iframe.evaluate("""() => {
+   const editor=document.getElementById('editor');
+   editor.innerHTML='<p style="margin-top:160px"><span id="selectedText">Trecho selecionado</span> para estudar.</p><p style="height:400px">Mais anotações</p>';
+   document.getElementById('selectedText').scrollIntoView({block:'center'});
+  }""")
+  def select_text():
+   iframe.evaluate("""() => {
+    const range=document.createRange();range.selectNodeContents(document.getElementById('selectedText'));
+    const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+    document.getElementById('editor').dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
+   }""")
+   frame.locator('.text-toolbar').wait_for()
+  select_text()
+  geometry=iframe.evaluate("""() => {
+   const toolbar=document.querySelector('.text-toolbar').getBoundingClientRect();
+   const text=window.getSelection().getRangeAt(0).getBoundingClientRect();
+   return {left:toolbar.left,right:toolbar.right,top:toolbar.top,bottom:toolbar.bottom,height:toolbar.height,
+    gap:Math.min(Math.abs(text.top-toolbar.bottom),Math.abs(toolbar.top-text.bottom)),width:innerWidth,viewportHeight:innerHeight};
+  }""")
+  assert geometry['gap']<=16,geometry
+  assert geometry['left']>=7 and geometry['right']<=geometry['width']-7,geometry
+  assert geometry['height']<=55,geometry
+  assert geometry['bottom']<geometry['viewportHeight']-40,geometry
+  # Horizontal overflow must not lose the selection when choosing a color.
+  frame.locator('#tbAmarelo').click()
+  assert frame.locator('#editor .mark-yellow').inner_text()=='Trecho selecionado'
+  select_text()
+  frame.locator('#tbFlashcard').click()
+  assert frame.locator('#inputPergunta').input_value()=='Trecho selecionado'
+  browser.close()

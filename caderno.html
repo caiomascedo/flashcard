@@ -159,15 +159,18 @@
             padding: 6px 10px; 
             z-index: 1002; 
             border: 1px solid #ddd;
-            max-width: 90vw;
+            max-width: calc(100vw - 16px);
+            width: max-content;
             flex-wrap: nowrap;
-            transition: all 0.1s;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            border-radius: 12px;
         }
         body.dark-mode .text-toolbar { background: #1e293b; border-color: #475569; }
         .text-toolbar button { 
             background: #f1f5f9; border: none; border-radius: 30px; 
             padding: 4px 8px; font-size: 11px; font-weight: 500; 
-            cursor: pointer; touch-action: manipulation; transition: all 0.1s; color: #334155;
+            cursor: pointer; touch-action: manipulation; transition: all 0.1s; color: #334155; flex-shrink: 0;
         }
         body.dark-mode .text-toolbar button { background: #334155; color: #e2e8f0; }
         .text-toolbar button:active { transform: scale(0.95); background: #e2e8f0; }
@@ -195,7 +198,7 @@
         body.dark-mode .mark-blue { background-color: #1e3a8a; color: #dbeafe; }
 
         @media (max-width: 640px) {
-            .text-toolbar { left: 8px !important; right: 8px !important; top: auto !important; bottom: 10px !important; max-width: none; width: auto; flex-wrap: wrap; justify-content: center; border-radius: 18px; }
+            .text-toolbar { gap: 4px; padding: 5px 6px; }
             .text-toolbar button { min-width: 30px; min-height: 30px; }
         }
 
@@ -990,24 +993,52 @@ function registrarAlteracaoLocal() {
     function iniciarReconhecimentoVoz(callback) { if(!recognition) { toast("🎤 Voz não suportado"); return; } recognition.onresult = (event) => { callback(event.results[0][0].transcript); }; recognition.onerror = () => toast("🎤 Não entendi"); recognition.start(); toast("🎤 Ouvindo..."); }
     document.getElementById('btnComandoVoz').onclick = () => { iniciarReconhecimentoVoz((texto) => { toast(`Você disse: "${texto}"`); const pendentes = dados.flashcards.filter(f => f.concursoId == concursoAtualId && f.materiaId == materiaAtualId && f.assuntoId == assuntoAtualId && new Date(f.proxima_revisao) <= new Date()); const match = pendentes.find(f => f.resposta.toLowerCase().includes(texto.toLowerCase()) || texto.toLowerCase().includes(f.resposta.toLowerCase())); if(match) { toast(`✅ Encontrado: ${match.pergunta.substring(0,30)}...`); editarFlashcard(match.id); } else { toast("❌ Nenhum flashcard corresponde"); } }); };
 
-    let lastViewportHeight = window.innerHeight;
-    function isKeyboardOpen() { return window.innerHeight < lastViewportHeight - 150; }
-    window.addEventListener('resize', () => { lastViewportHeight = window.innerHeight; if (textToolbar) { textToolbar.remove(); textToolbar = null; } });
+    let selecaoToolbar = null;
+    function posicionarToolbarTexto() {
+        if (!textToolbar?.isConnected || !selecaoToolbar) return;
+        const viewport = window.visualViewport;
+        const x = viewport?.offsetLeft || 0, y = viewport?.offsetTop || 0;
+        const width = viewport?.width || window.innerWidth;
+        const height = viewport?.height || window.innerHeight;
+        const rects = Array.from(selecaoToolbar.getClientRects());
+        const rect = rects.find(r => r.bottom > y && r.top < y + height) || selecaoToolbar.getBoundingClientRect();
+        const toolbar = textToolbar.getBoundingClientRect();
+        const margin = 8, gap = 12;
+        let top = rect.top - toolbar.height - gap;
+        if (top < y + margin) top = rect.bottom + gap;
+        top = Math.max(y + margin, Math.min(top, y + height - toolbar.height - margin));
+        const left = Math.max(x + margin, Math.min(rect.left + rect.width / 2 - toolbar.width / 2, x + width - toolbar.width - margin));
+        textToolbar.style.top = top + 'px';
+        textToolbar.style.left = left + 'px';
+        textToolbar.style.bottom = 'auto';
+    }
+    window.addEventListener('resize', posicionarToolbarTexto);
+    document.addEventListener('scroll', posicionarToolbarTexto, true);
+    window.visualViewport?.addEventListener('resize', posicionarToolbarTexto);
+    window.visualViewport?.addEventListener('scroll', posicionarToolbarTexto);
 
     function mostrarToolbarTexto() {
         const selection = window.getSelection();
-        if (selection.isCollapsed || selection.toString().trim() === "") { if (textToolbar) textToolbar.remove(); return; }
-        const range = selection.getRangeAt(0); const rect = range.getBoundingClientRect();
+        if (!selection.rangeCount || selection.isCollapsed || selection.toString().trim() === "") { if (textToolbar) textToolbar.remove(); return; }
+        const range = selection.getRangeAt(0);
+        if (!document.getElementById('editor').contains(range.commonAncestorContainer)) return;
         if (textToolbar) textToolbar.remove();
         textToolbar = document.createElement('div'); textToolbar.className = 'text-toolbar';
-        const keyboardOpen = isKeyboardOpen(); let left = rect.left + (rect.width / 2) - 230;
-        if (keyboardOpen) { textToolbar.style.bottom = '10px'; textToolbar.style.top = 'auto'; }
-        else { let top = rect.top - 85; if (top < 10) top = rect.bottom + 15; textToolbar.style.top = top + 'px'; textToolbar.style.bottom = 'auto'; }
-        if (left + 460 > window.innerWidth) left = window.innerWidth - 470; if (left < 10) left = 10;
-        textToolbar.style.left = left + 'px';
         const selecaoSalva = range.cloneRange();
+        selecaoToolbar = selecaoSalva;
         textToolbar.innerHTML = `<button id="tbB" style="font-weight:bold">N</button><button id="tbI" style="font-style:italic">I</button><button id="tbU" style="text-decoration:underline">S</button><button id="tbTitulo">H</button><button id="tbLista">•≡</button><button id="tbListaNum">1≡</button><button id="tbFlashcard" style="background:#dbeafe;color:#2563eb">✨</button><input id="tbCorTexto" type="color" value="#2563eb" title="Cor da letra" style="width:30px;height:28px;padding:2px;border:0;background:transparent;cursor:pointer"><button id="tbAmarelo" class="color-btn" title="Marca-texto amarelo" style="background:#fef08a">●</button><button id="tbVerde" class="color-btn" title="Marca-texto verde" style="background:#bbf7d0">●</button><button id="tbAzul" class="color-btn" title="Marca-texto azul" style="background:#bfdbfe">●</button><button id="tbVermelho" class="color-btn" title="Marca-texto vermelho" style="background:#fee2e2">●</button><button id="tbLaranja" class="color-btn" title="Marca-texto laranja" style="background:#ffedd5">●</button><button id="tbRoxo" class="color-btn" title="Marca-texto roxo" style="background:#f3e8ff">●</button><button id="tbApagarMarca" title="Remover marca-texto" style="background:#ef4444;color:white;padding:4px 8px">🧽</button><button id="tbFechar" style="background:#64748b;color:white;padding:4px 8px">✕</button>`;
+        textToolbar.setAttribute('role', 'toolbar');
+        textToolbar.setAttribute('aria-label', 'Formatar seleção; deslize para ver mais opções');
         document.body.appendChild(textToolbar);
+        posicionarToolbarTexto();
+        textToolbar.addEventListener('mousedown', event => {
+            if (event.target.closest('button')) event.preventDefault();
+        });
+        textToolbar.addEventListener('click', event => {
+            if (!event.target.closest('button')) return;
+            const selection = window.getSelection();
+            selection.removeAllRanges(); selection.addRange(selecaoSalva.cloneRange());
+        }, true);
         document.getElementById('tbB').onclick = () => { execCmd('bold'); if (textToolbar) textToolbar.remove(); };
         document.getElementById('tbI').onclick = () => { execCmd('italic'); if (textToolbar) textToolbar.remove(); };
         document.getElementById('tbU').onclick = () => { execCmd('underline'); if (textToolbar) textToolbar.remove(); };
