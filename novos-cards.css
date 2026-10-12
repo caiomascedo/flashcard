@@ -2,3 +2,6 @@
 .novo-lote-barra[hidden] { display:none; }
 .novo-lote-barra button { padding:6px 10px; border:1px solid #eab308; border-radius:7px; background:#facc15; color:#332900; font:600 12px system-ui; cursor:pointer; }
 #flashcard.card-novo { border-color:#facc15; box-shadow:0 0 0 2px rgb(250 204 21 / .35); }
+body.modo-foco #novoLoteBarra,
+body.modo-foco #modoBadge.filtro,
+body.modo-foco #filtroInfo { display:none !important; }
