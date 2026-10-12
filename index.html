@@ -1828,7 +1828,7 @@
         body.modo-foco .main-content > .header-top .header-actions > button:not(#modoFocoBtn),
         body.modo-foco #subtitulo, body.modo-foco .filtros-concluidos,
         body.modo-foco .legenda-figuras, body.modo-foco .footer,
-        body.modo-foco .controles-secundarios > button:not(#editarMaterialBtn):not(#copiarCardBtn):not(#cadernoCardBtn):not(#modeloVisualBtn),
+        body.modo-foco .controles-secundarios > button:not(#editarMaterialBtn):not(#copiarCardBtn):not(#copiarErradosBtn):not(#cadernoCardBtn):not(#modeloVisualBtn),
         body.modo-foco .controles-estudo > button:nth-child(n+5) { display: none !important; }
         body.modo-foco .main-content { width: 100%; margin: 0; }
         body.modo-foco .main-content > .header-top { justify-content: flex-end; }
@@ -1843,6 +1843,7 @@
 
     </style>
 <link rel="stylesheet" href="caderno-integrado.css?v=3">
+<link rel="stylesheet" href="novos-cards.css?v=1">
 </head>
 <body>
     <div class="auth-overlay" id="authOverlay">
@@ -1926,6 +1927,10 @@
             </section>
             <p class="subtitle" id="subtitulo">Sistema de estudo com reforço de erros</p>
 
+            <div id="novoLoteBarra" class="novo-lote-barra" hidden>
+                <strong id="novoLoteResumo"></strong>
+                <button type="button" onclick="iniciarNovosCards()">▶ Iniciar novos</button>
+            </div>
             <div id="modoBadge" class="modo-badge principal">📚 CARREGANDO...</div>
 
             <div class="stats">
@@ -1994,6 +1999,7 @@
                     <button onclick="agendarFeynman()">📅 Feynman</button>
                     <button id="editarMaterialBtn" type="button" onclick="editarRecursosCard()">✏️ Editar material</button>
                     <button id="modeloVisualBtn" onclick="alternarModeloVisual(event)" title="Alternar aparência do card">🎨 Visual: Padrão</button>
+                    <button id="copiarErradosBtn" type="button" onclick="copiarErradosRapido()" title="Copiar os cards errados da lupa ou revisão atual para enviar no chat">📋 Copiar errados</button>
                     <button id="copiarCardBtn" onclick="copiarCardAtualLimpo()">📋 Copiar</button>
                     <button id="cadernoCardBtn" onclick="enviarCardAoCaderno()" title="Atalho: C">📓 Anotar no Caderno (C)</button>
                     <button class="delete-card" onclick="apagarCardAtual()">🗑️ Card</button>
@@ -3018,6 +3024,7 @@
 
         function obterChaveFiltro(filtro) {
             if (!filtro) return '';
+            if (filtro.tipo === 'lote') return `lote:${filtro.loteId}`;
             if (filtro.tipo === 'busca') return `busca:${normalizarChaveFiltro(filtro.termo || String(filtro.nome || '').replace(/^Busca:\s*/i, ''))}`;
             if (filtro.nivel === 'pasta') return `pasta:${normalizarChaveFiltro(filtro.path || filtro.nome)}`;
             return `${filtro.nivel || 'filtro'}:${normalizarChaveFiltro(filtro.nome)}`;
@@ -3063,6 +3070,7 @@
                 chave,
                 nome: filtroAtivo.nome || 'Filtro',
                 tipo: filtroAtivo.tipo || '',
+                loteId: filtroAtivo.loteId || '',
                 nivel: filtroAtivo.nivel || '',
                 termo: filtroAtivo.termo || '',
                 path: filtroAtivo.path || '',
@@ -3077,7 +3085,9 @@
         function abrirFiltroConcluido(chave) {
             const item = filtrosConcluidos.find(registro => registro.chave === chave);
             if (!item) return;
-            if (item.tipo === 'busca') {
+            if (item.tipo === 'lote') {
+                iniciarNovosCards(item.loteId);
+            } else if (item.tipo === 'busca') {
                 searchInput.value = item.termo || String(item.nome || '').replace(/^Busca:\s*/i, '');
                 estudarBusca();
             } else if (item.nivel === 'pasta' && item.path) {
@@ -4011,6 +4021,8 @@
             }
 
             let novosCards = 0;
+            const importadoEm = flashcards.reduce((max, card) => Math.max(max, Number(card.importadoEm) || 0), Date.now()) + 1;
+            const loteImportacao = crypto.randomUUID();
 
             novosDados.forEach(item => {
                 const existe = flashcards.some(card =>
@@ -4022,6 +4034,7 @@
 
                 if (!existe) {
                     flashcards.push({
+                        loteImportacao, importadoEm,
                         idBancoPMPI: item.idBancoPMPI || '',
                         concurso: corrigirNomeImportado(item.concurso || 'Geral'),
                         materia: corrigirNomeImportado(item.materia || 'Geral'),
@@ -4253,6 +4266,7 @@
 
         function atualizarCard() {
             cancelarCliquesFoco();
+            if (typeof atualizarNovosCards === 'function') atualizarNovosCards();
             if (total === 0) {
                 atualizarRecursosCard(null);
                 caminhoNome.textContent = '';
@@ -6410,7 +6424,8 @@
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=4"></script>
+<script src="caderno-integrado.js?v=5"></script>
+<script src="novos-cards.js?v=1"></script>
 </body>
 </html>
 

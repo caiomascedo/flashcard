@@ -57,7 +57,8 @@
         if (!mudou) { ultimaVersaoCards = versao; return; }
         total = flashcards.length;
         if (filtroAtivo) {
-            if (filtroAtivo.path) indicesFiltrados = getIndicesDaPasta(filtroAtivo.path);
+            if (filtroAtivo.tipo === 'lote') indicesFiltrados = flashcards.map((card, index) => card.loteImportacao === filtroAtivo.loteId && card.tipo !== 'questao' && !(card.alternativas?.length >= 2) && !String(card.pergunta || '').startsWith('📁 Pasta:') ? index : -1).filter(index => index >= 0);
+            else if (filtroAtivo.path) indicesFiltrados = getIndicesDaPasta(filtroAtivo.path);
             else {
                 indicesFiltrados = flashcards.map((card, index) => {
                     const matches = filtroAtivo.tipo === 'busca'
