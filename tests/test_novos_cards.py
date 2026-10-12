@@ -17,7 +17,7 @@ def test_latest_import_and_copy_errors(server):
   def import_batch(prefix,count):
    cards=[{'concurso':'PMPI','materia':'Teste','assunto':prefix,'pergunta':f'{prefix} pergunta {i}','resposta':f'Resposta {i}'} for i in range(count)]
    page.locator('#jsonInput').set_input_files({'name':f'{prefix}.json','mimeType':'application/json','buffer':json.dumps(cards).encode()})
-   page.wait_for_function(f"indicesDoLote(ultimoLoteImportado()).length==={count} && flashcards.at(-1).assunto==='{prefix}'")
+   page.wait_for_function(f"indicesDoLote(ultimoLoteImportado()).length==={count} && indicesDoLote(ultimoLoteImportado()).every(i=>flashcards[i].assunto==='{prefix}')")
   import_batch('Antigo',20)
   old_lote=page.evaluate('ultimoLoteImportado()')
   import_batch('Novo',50)
