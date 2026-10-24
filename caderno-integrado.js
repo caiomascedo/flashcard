@@ -13,6 +13,13 @@
     let expandidoAntesDoEditor = false;
     let ultimaVersaoCards = '';
     const pendentes = [];
+    const parametrosUnificado = new URLSearchParams(location.search);
+    const veioDoUnificado = parametrosUnificado.get('view') === 'caderno-erros';
+    let assuntoPendente = veioDoUnificado && parametrosUnificado.get('assunto') && parametrosUnificado.get('materia') ? {
+        concurso:'PMPI', materia:parametrosUnificado.get('materia'), assunto:parametrosUnificado.get('assunto'), questoes:parametrosUnificado.get('qc')||''
+    } : null;
+    let abrirRotaPendente = veioDoUnificado;
+
 
     // Preserve progress and stable links while notebook authors edit their cards.
     function sincronizarCards() {
@@ -92,7 +99,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=4', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=5', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -101,6 +108,10 @@
             while (pendentes.length) {
                 await frame.contentWindow.CadernoIntegrado.importar(pendentes[0]);
                 pendentes.shift();
+            }
+            if (assuntoPendente) {
+                await frame.contentWindow.CadernoIntegrado.abrirAssunto(assuntoPendente);
+                assuntoPendente = null;
             }
             sincronizarCards();
             status.textContent = '';
@@ -115,8 +126,18 @@
         if (!carregando) carregar();
         else enviarPendentes();
     };
+    window.abrirCadernoPorAssunto = function(assunto) {
+        assuntoPendente = assunto;
+        window.abrirCadernoIntegrado();
+    };
     function prepararCaderno() {
-        if (!window.FlashcardCaderno?.pronto || carregando) return;
+        if (!window.FlashcardCaderno?.pronto) return;
+        if (abrirRotaPendente) {
+            abrirRotaPendente = false;
+            window.abrirCadernoIntegrado();
+            return;
+        }
+        if (carregando) return;
         const preparar = () => { if (!carregando) carregar(); };
         if ('requestIdleCallback' in window) window.requestIdleCallback(preparar, { timeout: 1500 });
         else setTimeout(preparar, 150);
