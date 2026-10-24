@@ -1,3 +1,19 @@
 .acoes-pergunta{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px;justify-content:center}.acoes-pergunta button{padding:8px 12px;border:1px solid #64748b;border-radius:8px;cursor:pointer}.acoes-pergunta+small{display:block;text-align:center;opacity:.75;font-size:11px}#historicoEstudo{font-size:12px;margin:8px 0;padding:8px;border:1px solid #64748b66;border-radius:8px}#historicoEstudo button{display:block;width:100%;text-align:left;background:transparent;color:inherit;border:0;padding:7px;overflow-wrap:anywhere;cursor:pointer}#historicoEstudo>div{max-height:220px;overflow:auto}#colaFlutuante{position:fixed;bottom:18px;right:18px;z-index:60;padding:9px 12px;background:#22372f;color:#fff;border:1px solid #658675;border-radius:10px;font-size:12px}#colaCampos label{display:block;font-size:12px;margin:7px 0}#colaCampos input{max-width:100%}#novoLoteResumo{overflow-wrap:anywhere}
 .sinal-novos{color:#8bbba2;font-size:10px;padding:1px 4px;border:1px solid #8bbba244;border-radius:4px;margin-left:4px}
 #flashcard.card-novo{border-color:#709984;box-shadow:none}.novo-lote-barra{border-color:#70998466;color:inherit;background:#7099840d}.novo-lote-barra button{border-color:#709984;background:#234d39;color:#fff}
+#atividadeLateral,#historicoEstudo{width:100%;margin:5px 0;padding:8px;border:1px solid #555d7b;border-radius:8px;background:#20233b;color:#edf2ff;font:12px/1.45 system-ui,sans-serif;text-align:left;box-sizing:border-box}
+#atividadeLateral summary,#historicoEstudo summary{cursor:pointer;color:#edf2ff;font-weight:600;padding:3px 0}
+#historicoEstudo>div{max-height:300px;overflow:auto;padding-top:6px}
+#historicoEstudo .historico-pasta{margin:4px 0 4px 7px;padding:3px 0 3px 7px;border-left:1px solid #59627e}
+#historicoEstudo .historico-pasta summary{overflow-wrap:anywhere;font-weight:500}
+#historicoEstudo button{color:#d3e9ff;background:#2b3452;border:1px solid #4b6079;border-radius:5px;padding:5px 7px;margin:4px 0;font-size:11px;cursor:pointer}
+#historicoEstudo small{display:block;color:#b8c8df;font-size:10px}
+#atividadeLateral #subtitulo{font-size:11px;margin:5px 0;color:#c6d3e4;text-align:left}
+#atividadeLateral #novoLoteBarra{padding:5px;margin:5px 0;font-size:11px;justify-content:flex-start;color:#dce8f5}
+#atividadeLateral #novoLoteResumo{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#atividadeLateral #modoBadge{display:block;max-width:100%;margin:5px 0;padding:4px 6px;font-size:10px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#atividadeLateral #filtrosConcluidosPainel{margin:4px 0;padding:0}#atividadeLateral .filtro-concluido{font-size:11px}
+.opcao-destaque{display:flex;align-items:center;gap:5px;color:#c6d3e4;font-size:11px;margin-top:8px}.opcao-destaque input{accent-color:#8aabc3}
+body.sem-destaque #modoBadge.filtro,body.sem-destaque #filtroInfo,body.sem-destaque #flashcard.card-novo{border-color:#56617c!important;box-shadow:none!important;background-color:transparent;color:#d3deef}
+body.sem-destaque #flashcard{box-shadow:none!important}body.sem-destaque .modo-badge.filtro{outline:none!important}
+#atividadeLateral .filtros-concluidos-lista{max-height:180px;overflow:auto}
