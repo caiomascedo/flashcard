@@ -543,8 +543,13 @@ globalThis.CadernoAssuntoPMPI = (() => {
         const concursos=dados.concursos||[];
         let concurso=unico(concursos.filter(c=>concursoChave(c.nome)==='pmpi'),'concurso PMPI');
         const materias=concurso?.materias||[];
-        let materia=unico(materias.filter(m=>materiaChave(m.nome)===p.materiaChave),'matéria');
-        let assunto=unico((materia?.assuntos||[]).filter(a=>a.unificado?.chave===p.chave || assuntoChave(a.nome)===p.chave),'assunto');
+        // Reutilizar o assunto entre pastas equivalentes, sem juntar nem apagar anotações.
+        const candidatas=materias.filter(m=>materiaChave(m.nome)===p.materiaChave);
+        const opcoes=candidatas.flatMap(m=>(m.assuntos||[]).filter(a=>a.unificado?.chave===p.chave || assuntoChave(a.nome)===p.chave).map(a=>({m,a})));
+        const prioridade=({m,a})=>(a?.unificado?.chave===p.chave?100:0)+(normalizar(m.nome)===normalizar(p.materia)?10:0)+(m.id===concurso?.materiaAtualId?1:0);
+        opcoes.sort((a,b)=>prioridade(b)-prioridade(a));
+        let materia=opcoes[0]?.m || candidatas.find(m=>normalizar(m.nome)===normalizar(p.materia)) || candidatas.find(m=>m.id===concurso?.materiaAtualId) || candidatas[0];
+        let assunto=opcoes[0]?.a;
         // Só criar depois de verificar ambiguidades; nunca criar outra pasta por data.
         dados.concursos ||= [];
         if(!concurso){concurso={id:id(),nome:'PMPI',materias:[],materiaAtualId:null};dados.concursos.push(concurso);}
