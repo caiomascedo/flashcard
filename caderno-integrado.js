@@ -99,7 +99,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=5', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=6', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -117,7 +117,7 @@
             status.textContent = '';
         } catch (error) {
             console.error(error);
-            falha('Não foi possível anotar o card. Ele está aguardando uma nova tentativa.');
+            falha(assuntoPendente ? 'Não foi possível abrir o assunto no caderno de erros. ' + (error.message || 'Tente novamente.') : 'Não foi possível anotar o card. Ele está aguardando uma nova tentativa.');
         } finally { enviando = false; }
     }
     window.abrirCadernoIntegrado = function(card) {
