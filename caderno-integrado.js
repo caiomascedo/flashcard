@@ -99,7 +99,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=6', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=7', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
