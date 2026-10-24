@@ -365,6 +365,12 @@
         body.dark-mode .stats-clickable:hover {
             background: #334155 !important;
         }
+        body.ferramentas-recolhidas #acoesCabecalho,
+        body.ferramentas-recolhidas #ferramentasEditor,
+        body.ferramentas-recolhidas #atalhosAssunto { display:none !important; }
+        #btnRecolherFerramentas { margin-left:auto; min-height:30px; padding:4px 9px; border:1px solid #94a3b8; border-radius:8px; background:#f1f5f9; color:#1e293b; font-size:12px; cursor:pointer; }
+        #btnRecolherFerramentas:focus-visible { outline:3px solid #16a34a; outline-offset:2px; }
+        body.dark-mode #btnRecolherFerramentas { background:#334155; color:#e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen pb-16">
@@ -376,7 +382,8 @@
 
 <div class="bg-white border-b p-3 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-10 shadow-sm">
     <h1 class="text-xl font-bold text-green-700">📘 Caderno de Erros</h1>
-    <div class="flex gap-2 items-center flex-wrap">
+    <button id="btnRecolherFerramentas" type="button" aria-expanded="true" aria-controls="acoesCabecalho ferramentasEditor atalhosAssunto">− Minimizar ferramentas</button>
+    <div id="acoesCabecalho" class="flex gap-2 items-center flex-wrap">
         <button id="btnCronograma" class="bg-gray-200 px-2 py-1 rounded text-xs">📅</button>
         <button id="btnExportar" class="bg-gray-200 px-2 py-1 rounded text-xs">📁</button>
         <button id="btnImportar" class="bg-gray-200 px-2 py-1 rounded text-xs">📂</button>
@@ -407,7 +414,7 @@
 
 <div class="flex flex-col md:flex-row gap-4 p-4">
     <div class="flex-1 bg-white rounded-2xl shadow-md border p-4">
-        <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+        <div id="ferramentasEditor" class="flex flex-wrap justify-between items-center mb-3 gap-2">
             <div class="text-sm"><span class="text-gray-500">🏛️ Concurso:</span> <span id="nomeConcurso" class="font-semibold">—</span><br><span class="text-gray-500">📚 Matéria:</span> <span id="nomeMateria" class="font-semibold">—</span><br><span class="text-gray-500">📌 Assunto:</span> <span id="nomeAssunto" class="font-semibold">—</span></div>
             <div class="flex gap-1 flex-wrap">
                 <button class="btn" id="btnBold"><b>N</b></button>
@@ -496,6 +503,15 @@
 <div id="toast" class="toast">💾</div>
 
 <script>
+// Recolhe o contexto e as barras sem alterar o conteúdo do caderno.
+(() => {
+    const botao=document.getElementById('btnRecolherFerramentas');
+    botao.addEventListener('click',()=>{
+        const recolhido=document.body.classList.toggle('ferramentas-recolhidas');
+        botao.setAttribute('aria-expanded',String(!recolhido));
+        botao.textContent=recolhido?'＋ Maximizar ferramentas':'− Minimizar ferramentas';
+    });
+})();
 // INTEGRACAO_UNIFICADO_ASSUNTO
 /* Núcleo da integração. Incorporado em caderno.html; sem dependência de rede. */
 globalThis.CadernoAssuntoPMPI = (() => {
