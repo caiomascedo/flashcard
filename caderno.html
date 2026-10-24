@@ -748,7 +748,7 @@ function registrarAlteracaoLocal() {
     let recognition = null;
     if('webkitSpeechRecognition' in window) { recognition = new webkitSpeechRecognition(); recognition.lang = 'pt-BR'; recognition.continuous = false; recognition.interimResults = false; }
 
-    function salvarTudo() { localStorage.setItem('dados_concursos', JSON.stringify(dados)); registrarAlteracaoLocal(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias(); }
+    function salvarTudo() { if(window.atualizarHistoricoCaderno)window.atualizarHistoricoCaderno(); localStorage.setItem('dados_concursos', JSON.stringify(dados)); registrarAlteracaoLocal(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias(); }
     function atualizarStats() { 
         const pendentes = dados.flashcards.filter(f=>new Date(f.proxima_revisao)<=new Date()).length; 
         document.getElementById('statsHeader').innerHTML = `${pendentes} pend.`;
@@ -1386,6 +1386,31 @@ function registrarAlteracaoLocal() {
         finally { document.getElementById('pdfOverlay').classList.remove('ativo'); }
     };
 
+
+    window.atualizarHistoricoCaderno = function() {
+        const lista=document.getElementById('historicoCadernoLista');if(!lista)return;
+        lista.replaceChildren();
+        const paginas=[];
+        dados.concursos.forEach(c=>(c.materias||[]).forEach(m=>(m.assuntos||[]).forEach(a=>(a.paginas||[]).forEach(p=>paginas.push({c,m,a,p})))));
+        const titulo=document.createElement('strong');titulo.textContent='📅 Últimos cadernos registrados';lista.append(titulo);
+        paginas.sort((x,y)=>new Date(y.p.data)-new Date(x.p.data)).slice(0,8).forEach(({c,m,a,p})=>{
+            const b=document.createElement('button');b.textContent=c.nome+' › '+m.nome+' › '+a.nome+' · '+p.titulo;
+            b.onclick=()=>{salvarEditor();concursoAtualId=c.id;materiaAtualId=m.id;assuntoAtualId=a.id;navLevel='paginas';abrirPagina(p.id);atualizarPreview();};lista.append(b);
+        });
+        const t=document.createElement('strong');t.textContent='🎴 Últimos cards cadastrados';lista.append(t);
+        [...dados.flashcards].sort((a,b)=>(Number(b.id)||0)-(Number(a.id)||0)).slice(0,8).forEach(card=>{
+            const b=document.createElement('button');b.textContent=card.pergunta;b.onclick=()=>{salvarEditor();concursoAtualId=card.concursoId;materiaAtualId=card.materiaId;assuntoAtualId=card.assuntoId;navLevel='paginas';renderNav();atualizarPreview();editarFlashcard(card.id);};lista.append(b);
+        });
+    };
+    window.prepararColaCaderno=function(texto){
+        if(!concursoAtualId||!materiaAtualId||!assuntoAtualId){toast('Selecione o assunto antes de cadastrar.');return false;}
+        const partes=String(texto).replace(/\r\n?/g,'\n').trim().split(/\n[\t ]*\n+/);
+        editandoFlashcardId=null;
+        document.getElementById('inputPergunta').value=partes.shift()||'';
+        document.getElementById('inputResposta').value=partes.join('\n\n');
+        document.getElementById('inputTags').value='';abrirModal('modalFlashcard');return true;
+    };
+
     // ==================== NAVEGAÇÃO EM PASTAS (Concursos > Matérias > Assuntos > Páginas) ====================
     let navLevel = 'concursos';
     let paginaAtualId = null;
@@ -1475,7 +1500,7 @@ function registrarAlteracaoLocal() {
     };
     window.addEventListener('caderno:pronto-local',atualizarAtalhosDoAssunto);
 
-    function renderNav() {
+    function renderNav() { if(window.atualizarHistoricoCaderno)window.atualizarHistoricoCaderno();
         const breadcrumb = document.getElementById('navBreadcrumb');
         const titulo = document.getElementById('navTitulo');
         const lista = document.getElementById('navLista');
@@ -2066,5 +2091,6 @@ if (supabaseOk) {
     document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
 }
 </script>
-</body>
+<script src="melhorias-caderno.js?v=1"></script></body>
 </html>
+
