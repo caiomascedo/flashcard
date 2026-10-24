@@ -3061,6 +3061,7 @@
         }
 
         function verificarConclusaoFiltro() {
+            if (filtroAtivo?.tipo === 'lista') return;
             if (!filtroAtivo || !indicesFiltrados.length || modoFilaErros || modoRevisao) return;
             const concluiu = indicesFiltrados.every(indice => statusCard[indice] && statusCard[indice] !== 'nao');
             if (!concluiu) return;
@@ -6424,7 +6425,7 @@
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=9"></script>
+<script src="caderno-integrado.js?v=10"></script>
 <script src="novos-cards.js?v=1"></script>
-<link rel="stylesheet" href="melhorias-estudo.css?v=2"><script src="melhorias-estudo.js?v=2"></script></body>
+<link rel="stylesheet" href="melhorias-estudo.css?v=3"><script src="melhorias-estudo.js?v=3"></script><script src="detalhes-estudo.js?v=1"></script></body>
 </html>

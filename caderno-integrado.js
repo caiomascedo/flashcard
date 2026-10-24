@@ -65,6 +65,7 @@
         total = flashcards.length;
         if (filtroAtivo) {
             if (filtroAtivo.tipo === 'lote') indicesFiltrados = flashcards.map((card, index) => card.loteImportacao === filtroAtivo.loteId && card.tipo !== 'questao' && !(card.alternativas?.length >= 2) && !String(card.pergunta || '').startsWith('📁 Pasta:') ? index : -1).filter(index => index >= 0);
+            else if (filtroAtivo.tipo === 'lista') indicesFiltrados = indicesFiltrados.filter(index=>!!flashcards[index]);
             else if (filtroAtivo.path) indicesFiltrados = getIndicesDaPasta(filtroAtivo.path);
             else {
                 indicesFiltrados = flashcards.map((card, index) => {
@@ -99,7 +100,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=9', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=10', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -153,6 +154,10 @@
     document.getElementById('cadernoIntegradoFechar').onclick = () => { salvar(); dialog.close(); };
     dialog.addEventListener('cancel', salvar);
     dialog.addEventListener('close', salvar);
+    let iniciouFora=false;
+    const fora=event=>{const r=dialog.getBoundingClientRect();return event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom;};
+    dialog.addEventListener('pointerdown',event=>{iniciouFora=event.target===dialog && fora(event);});
+    dialog.addEventListener('click',event=>{if(iniciouFora && event.target===dialog && fora(event)){salvar();dialog.close();}iniciouFora=false;});
     retry.onclick = () => { if (pronto) { retry.hidden = true; enviarPendentes(); } else carregar(); };
     expand.onclick = () => definirExpandido(!dialog.classList.contains('caderno-maximizado'));
     window.addEventListener('message', event => {

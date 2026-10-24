@@ -17,3 +17,5 @@
 body.sem-destaque #modoBadge.filtro,body.sem-destaque #filtroInfo,body.sem-destaque #flashcard.card-novo{border-color:#56617c!important;box-shadow:none!important;background-color:transparent;color:#d3deef}
 body.sem-destaque #flashcard{box-shadow:none!important}body.sem-destaque .modo-badge.filtro{outline:none!important}
 #atividadeLateral .filtros-concluidos-lista{max-height:180px;overflow:auto}
+#cadernoFlutuante{position:fixed;bottom:18px;right:18px;z-index:60;padding:9px 12px;background:#22372f;color:#fff;border:1px solid #658675;border-radius:10px;font-size:12px;cursor:pointer}
+.acoes-pergunta+small{color:#bccce2;opacity:1}

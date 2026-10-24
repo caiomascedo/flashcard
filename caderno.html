@@ -1655,9 +1655,39 @@ function registrarAlteracaoLocal() {
         else if (navLevel === 'paginas') adicionarPagina();
     };
 
+
+    window.estadoEditorCaderno = function() {
+        const {concurso,materia,assunto}=contextoAtualDoCaderno();
+        const pagina=assunto?.paginas?.find(p=>p.id==paginaAtualId);
+        const faltando=[];if(!concurso)faltando.push('o concurso');if(!materia)faltando.push('a matéria');if(!assunto)faltando.push('o assunto');if(!pagina)faltando.push('uma página de estudo');
+        return {concurso:concurso?.nome||'',materia:materia?.nome||'',assunto:assunto?.nome||'',sincronizado:sincronizacaoInicialConcluida,editavel:!!pagina && document.getElementById('editor').getAttribute('contenteditable')==='true',faltando};
+    };
+    window.prepararEscritaCaderno = function(destino) {
+        if(!sincronizacaoInicialConcluida)throw Error('Aguarde a sincronização antes de cadastrar.');
+        for(const key of ['concurso','materia','assunto'])if(!String(destino[key]||'').trim())throw Error('Preencha concurso, matéria e assunto.');
+        const contexto=contextoAtualDoCaderno(),normalizar=CadernoAssuntoPMPI.normalizar;
+        const encontrar=(lista,nome,atual)=>{if(atual && normalizar(atual.nome)===normalizar(nome))return atual;const encontrados=lista.filter(x=>normalizar(x.nome)===normalizar(nome));if(encontrados.length>1)throw Error('Há pastas com nomes iguais. Escolha o destino no painel de pastas.');return encontrados[0];};
+        dados.concursos ||= [];
+        let concurso=encontrar(dados.concursos,destino.concurso,contexto.concurso);
+        let materia=encontrar(concurso?.materias||[],destino.materia,concurso===contexto.concurso?contexto.materia:null);
+        let assunto=encontrar(materia?.assuntos||[],destino.assunto,materia===contexto.materia?contexto.assunto:null);
+        salvarEditor();const id=CadernoAssuntoPMPI.geradorId(dados);
+        if(!concurso){concurso={id:id(),nome:destino.concurso.trim(),materias:[]};dados.concursos.push(concurso);}
+        concurso.materias ||= [];if(!materia){materia={id:id(),nome:destino.materia.trim(),assuntos:[]};concurso.materias.push(materia);}
+        materia.assuntos ||= [];if(!assunto){assunto={id:id(),nome:destino.assunto.trim(),paginas:[]};materia.assuntos.push(assunto);}
+        assunto.paginas ||= [];let pagina=assunto.paginas.find(p=>p.id==assunto.paginaAtualId)||assunto.paginas.at(-1);
+        if(!pagina)pagina=CadernoAssuntoPMPI.novaPagina(assunto,id);
+        concursoAtualId=concurso.id;materiaAtualId=materia.id;assuntoAtualId=assunto.id;paginaAtualId=pagina.id;
+        concurso.materiaAtualId=materia.id;materia.assuntoAtualId=assunto.id;assunto.paginaAtualId=pagina.id;navLevel='paginas';
+        salvarTudo();renderNav();carregarEditor();atualizarPreview();atualizarCabecalho();document.getElementById('editor').focus();toast('Caderno pronto para escrever.');
+    };
+
     function carregarEditor() {
         const editor = document.getElementById('editor');
-        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId || !paginaAtualId) { editor.innerHTML = ""; editor.setAttribute('contenteditable', 'false'); undoStack = []; redoStack = []; atualizarContadorPalavras(); return; }
+        const contexto=contextoAtualDoCaderno();
+        const existente=contexto.assunto?.paginas?.find(p=>p.id==paginaAtualId)||contexto.assunto?.paginas?.find(p=>p.id==contexto.assunto.paginaAtualId)||contexto.assunto?.paginas?.at(-1);
+        paginaAtualId=existente?.id||null;
+        if (!existente) { editor.innerHTML = ""; editor.setAttribute('contenteditable', 'false'); undoStack = []; redoStack = []; atualizarContadorPalavras(); atualizarCabecalho(); return; }
         editor.setAttribute('contenteditable', 'true');
         const concurso = dados.concursos.find(c => c.id == concursoAtualId);
         const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
@@ -2091,6 +2121,6 @@ if (supabaseOk) {
     document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
 }
 </script>
-<script src="melhorias-caderno.js?v=2"></script></body>
+<script src="melhorias-caderno.js?v=3"></script></body>
 </html>
 

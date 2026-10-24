@@ -1,33 +1,7 @@
-/* Ferramentas de estudo: histórico local e colagem com revisão. */
-function separarCola(texto) {
-    const partes = String(texto).replace(/\r\n?/g, '\n').trim().split(/\n[\t ]*\n+/);
-    return { pergunta: partes.shift()?.trim() || '', resposta: partes.join('\n\n').trim() };
-}
-function abrirColaInteligente() {
-    abrirModal('📋 Cola inteligente', `<p>Cole a pergunta e a resposta separadas por uma linha em branco (Shift+Enter duas vezes).</p><textarea id="colaTexto" rows="7" aria-label="Pergunta e resposta juntas" style="width:100%"></textarea><div id="colaCampos"></div>`, 'Cadastrar flashcard', () => {
-        const p=document.getElementById('colaPergunta'), r=document.getElementById('colaResposta');
-        if(!p.value.trim() || !r.value.trim()) { showToast('Preencha a pergunta e a resposta.'); return false; }
-        const item={pergunta:p.value.trim(),resposta:r.value.trim()};
-        for(const key of ['concurso','materia','assunto','topico']) item[key]=document.getElementById('cola_'+key).value.trim() || 'Geral';
-        adicionarDados([item]);
-    });
-    const campos=document.getElementById('colaCampos');
-    const atual=getCardAtual() || {};
-    for(const key of ['concurso','materia','assunto','topico']) {
-        const label=document.createElement('label'); label.textContent=key+': ';
-        const input=document.createElement('input'); input.id='cola_'+key; input.value=atual[key]||''; label.append(input); campos.append(label);
-    }
-    for(const [id,nome] of [['colaPergunta','Frente / pergunta'],['colaResposta','Verso / resposta']]) {
-        const label=document.createElement('label');label.textContent=nome;
-        const area=document.createElement('textarea');area.id=id;area.rows=3;area.style.width='100%';label.append(area);campos.append(label);
-    }
-    document.getElementById('colaTexto').addEventListener('input',e=>{
-        const c=separarCola(e.target.value);document.getElementById('colaPergunta').value=c.pergunta;document.getElementById('colaResposta').value=c.resposta;
-    });
-}
 (() => {
     const key='estudo_historico_v1';
     let eventos=[];try { eventos=JSON.parse(localStorage.getItem(key)||'[]'); if(!Array.isArray(eventos))eventos=[]; } catch {}
+    window.obterHistoricoEstudo=()=>eventos.map(ev=>({...ev}));
     const painel=document.createElement('details');painel.id='historicoEstudo';painel.innerHTML='<summary>🕘 Últimos cards e lupas</summary><div></div>';
     const atividade=document.createElement('details');atividade.id='atividadeLateral';atividade.innerHTML='<summary>📌 Atividade e novos cards</summary><div></div>';
     atividade.lastElementChild.append(document.getElementById('subtitulo'),document.getElementById('novoLoteBarra'),document.getElementById('filtrosConcluidosPainel'));
@@ -117,8 +91,7 @@ function abrirColaInteligente() {
     document.getElementById('flashcard').after(barra);
     document.querySelectorAll('[onclick="marcarAcertou()"], [onclick="marcarErrou()"], [onclick^="marcarNivel("]').forEach(b=>barra.append(b));
     const dica=document.createElement('small');dica.textContent='←/→ passar · Espaço revelar · A acertou · E errou · 1 fácil · 2 médio · 3 difícil';barra.after(dica);
-    const btn=document.createElement('button');btn.textContent='📋 Cola inteligente';btn.onclick=abrirColaInteligente;document.querySelector('.header-actions').append(btn);
-    const flut=btn.cloneNode(true);flut.id='colaFlutuante';flut.onclick=abrirColaInteligente;document.body.append(flut);
+    const flut=document.createElement('button');flut.id='cadernoFlutuante';flut.type='button';flut.textContent='📕 Caderno de erros';flut.onclick=()=>abrirCadernoIntegrado();document.body.append(flut);
     document.addEventListener('keydown',e=>{
         if(e.ctrlKey||e.altKey||e.metaKey||e.target.closest('input,textarea,select,[contenteditable="true"]')||document.querySelector('dialog[open]')||modalOverlay.classList.contains('active'))return;
         if(['1','2','3'].includes(e.key)){e.preventDefault();marcarNivel({'1':'facil','2':'medio','3':'dificil'}[e.key]);}
