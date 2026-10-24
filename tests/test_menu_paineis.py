@@ -8,8 +8,8 @@ NOTEBOOK = {'dados': {'concursos': [{'id':1,'nome':'PMPI','materiaAtualId':11,'m
  {'id':11,'nome':'Português','assuntoAtualId':111,'assuntos':[{'id':111,'nome':'Concordância','paginaAtualId':1111,'paginas':[{'id':1111,'titulo':'Notas','data':'2026-10-24T10:00:00Z','cadernoHTML':'<p>Anotação preservada.</p>'}]}]},
  {'id':12,'nome':'Legislação','assuntoAtualId':121,'assuntos':[{'id':121,'nome':'Lei','paginaAtualId':1211,'paginas':[{'id':1211,'titulo':'Outra nota','data':'2026-10-24T10:00:00Z','cadernoHTML':'<p>Outra anotação.</p>'}]}]}
 ]}], 'flashcards': [
- {'id':101,'concursoId':1,'materiaId':11,'assuntoId':111,'pergunta':'Primeira pergunta','resposta':'Resposta um','tags':[],'proxima_revisao':'2000-01-01T00:00:00Z'},
- {'id':102,'concursoId':1,'materiaId':12,'assuntoId':121,'pergunta':'Segunda pergunta','resposta':'Resposta dois','tags':[],'proxima_revisao':'2000-01-01T00:00:00Z'}
+ {'id':101,'concursoId':1,'materiaId':11,'assuntoId':111,'pergunta':'Primeira pergunta','resposta':'Resposta um','tags':[],'intervalo':0,'repeticoes':0,'facilidade':2.5,'proxima_revisao':'2000-01-01T00:00:00Z'},
+ {'id':102,'concursoId':1,'materiaId':12,'assuntoId':121,'pergunta':'Segunda pergunta','resposta':'Resposta dois','tags':[],'intervalo':0,'repeticoes':0,'facilidade':2.5,'proxima_revisao':'2000-01-01T00:00:00Z'}
 ]},'cronograma':[],'updated_at':'2026-10-24T12:00:00Z'}
 
 @pytest.mark.parametrize('engine,width',[('chromium',390),('webkit',390),('chromium',1280),('webkit',1280)])
@@ -109,5 +109,27 @@ def test_menu_and_notebook_panels(server,engine,width):
   saved=page.evaluate('JSON.parse(localStorage.dados_concursos)')
   assert saved['concursos'][0]['materias'][0]['assuntos'][0]['paginas'][0]['cadernoHTML']=='<p>Anotação preservada.</p>'
   assert len(saved['flashcards'])==2
+  # Dismiss the mobile drawer by tapping elsewhere, then study by subject.
+  if width<768:
+   frame.locator('h1').tap()
+   expect(frame.locator('#cadernoLateral')).to_be_hidden()
+   frame.locator('#abrirPainelCaderno').click()
+  frame.locator('#historicoCaderno>summary').click()
+  frame.locator('#historicoCadernoLista>details>summary').first.click()
+  frame.locator('#historicoCadernoLista>details>details>summary').first.click()
+  frame.get_by_text('🎴 Ver perguntas',exact=True).first.click()
+  frame.get_by_role('button',name='Primeira pergunta',exact=True).click()
+  expect(frame.locator('#estudoConteudo')).to_contain_text('Primeira pergunta')
+  frame.locator('#fecharEstudo').click()
+  frame.locator('#abrirPainelCaderno').click()
+  frame.get_by_role('button',name='▶ Responder cards deste assunto',exact=True).first.click()
+  expect(frame.locator('#cadernoLateral')).to_be_hidden()
+  expect(frame.locator('#modalEstudo')).to_be_visible()
+  expect(frame.locator('#estudoConteudo')).to_contain_text('Primeira pergunta')
+  expect(frame.locator('#estudoConteudo')).not_to_contain_text('Segunda pergunta')
+  frame.locator('#estudoInner').click()
+  frame.get_by_role('button',name='🟠 Médio',exact=True).click()
+  page.wait_for_function("JSON.parse(localStorage.dados_concursos).flashcards[0].ultima_revisao")
+  assert not page.evaluate('JSON.parse(localStorage.dados_concursos).flashcards[1].ultima_revisao || null')
   assert not errors,errors
   browser.close()

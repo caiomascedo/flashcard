@@ -1401,17 +1401,35 @@ function registrarAlteracaoLocal() {
     window.atualizarHistoricoCaderno = function() {
         const lista=document.getElementById('historicoCadernoLista');if(!lista)return;
         lista.replaceChildren();
-        const paginas=[];
-        dados.concursos.forEach(c=>(c.materias||[]).forEach(m=>(m.assuntos||[]).forEach(a=>(a.paginas||[]).forEach(p=>paginas.push({c,m,a,p})))));
-        const titulo=document.createElement('strong');titulo.textContent='📅 Últimos cadernos registrados';lista.append(titulo);
-        paginas.sort((x,y)=>new Date(y.p.data)-new Date(x.p.data)).slice(0,8).forEach(({c,m,a,p})=>{
-            const b=document.createElement('button');b.textContent=c.nome+' › '+m.nome+' › '+a.nome+' · '+p.titulo;
-            b.onclick=()=>{salvarEditor();concursoAtualId=c.id;materiaAtualId=m.id;assuntoAtualId=a.id;navLevel='paginas';abrirPagina(p.id);atualizarPreview();};lista.append(b);
-        });
-        const t=document.createElement('strong');t.textContent='🎴 Últimos cards cadastrados';lista.append(t);
-        [...dados.flashcards].sort((a,b)=>(Number(b.id)||0)-(Number(a.id)||0)).slice(0,8).forEach(card=>{
-            const b=document.createElement('button');b.textContent=card.pergunta;b.onclick=()=>{salvarEditor();concursoAtualId=card.concursoId;materiaAtualId=card.materiaId;assuntoAtualId=card.assuntoId;navLevel='paginas';renderNav();atualizarPreview();editarFlashcard(card.id);};lista.append(b);
-        });
+        for (const c of dados.concursos) for (const m of c.materias || []) {
+            const materia=document.createElement('details');
+            const cab=document.createElement('summary');cab.textContent=c.nome+' › '+m.nome;materia.append(cab);
+            for (const a of m.assuntos || []) {
+                const cards=dados.flashcards.filter(f=>f.concursoId==c.id && f.materiaId==m.id && f.assuntoId==a.id);
+                if (!cards.length && !a.paginas?.length) continue;
+                const assunto=document.createElement('details'),titulo=document.createElement('summary');
+                titulo.textContent=a.nome+' · '+cards.length+' cards';assunto.append(titulo);
+                if(cards.length){
+                    const estudar=document.createElement('button');estudar.type='button';estudar.textContent='▶ Responder cards deste assunto';
+                    estudar.onclick=()=>{studyQueue=cards.slice();studyIdx=0;studySessionTotal=cards.length;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};assunto.append(estudar);
+                    const pendentes=cards.filter(f=>new Date(f.proxima_revisao)<=new Date());
+                    if(pendentes.length){const revisar=document.createElement('button');revisar.type='button';revisar.textContent='🔄 Revisar '+pendentes.length+' pendentes';revisar.onclick=()=>{studyQueue=pendentes.slice();studyIdx=0;studySessionTotal=pendentes.length;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};assunto.append(revisar);}
+                }
+                if(cards.length){
+                    const perguntas=document.createElement('details'),cab=document.createElement('summary');cab.textContent='🎴 Ver perguntas';perguntas.append(cab);
+                    perguntas.addEventListener('toggle',()=>{if(!perguntas.open || perguntas.dataset.carregado)return;perguntas.dataset.carregado='true';
+                    for(const card of cards){const responder=document.createElement('button');responder.type='button';responder.textContent=card.pergunta;responder.onclick=()=>{studyQueue=[card];studyIdx=0;studySessionTotal=1;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};perguntas.append(responder);}
+                    });
+                    assunto.append(perguntas);
+                }
+                for(const pg of [...(a.paginas||[])].sort((x,y)=>new Date(y.data)-new Date(x.data))){
+                    const abrir=document.createElement('button');abrir.type='button';abrir.textContent='📓 '+pg.titulo;abrir.onclick=()=>{salvarEditor();concursoAtualId=c.id;materiaAtualId=m.id;assuntoAtualId=a.id;navLevel='paginas';abrirPagina(pg.id);atualizarPreview();window.dispatchEvent(new Event('caderno:fechar-paineis'));};assunto.append(abrir);
+                }
+                materia.append(assunto);
+            }
+            if(materia.children.length>1)lista.append(materia);
+        }
+        if(!lista.children.length)lista.textContent='Nenhum caderno ou card cadastrado.';
     };
     window.prepararColaCaderno=function(texto){
         if(!concursoAtualId||!materiaAtualId||!assuntoAtualId){toast('Selecione o assunto antes de cadastrar.');return false;}
@@ -2133,6 +2151,6 @@ if (supabaseOk) {
     document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
 }
 </script>
-<script src="melhorias-caderno.js?v=4"></script></body>
+<script src="melhorias-caderno.js?v=5"></script></body>
 </html>
 

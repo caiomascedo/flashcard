@@ -7,7 +7,7 @@
     #acoesAssuntoCompactas button{font-size:11px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:7px}
     #ocultarTodasPendencias,#mostrarPendenciasOcultas{font:12px system-ui;padding:5px 7px;border:1px solid #bc9c57;border-radius:6px;background:#fff9e5;color:#6c4a0b;cursor:pointer}#mostrarPendenciasOcultas[hidden]{display:none!important}.pendencia-item{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pendencia-item>span:first-child{flex:1;min-width:100px}.pendencia-acoes{display:flex;gap:5px;flex-wrap:wrap}.pendencia-acoes button{font:11px system-ui;padding:5px 7px;border:1px solid #c7ad76;border-radius:5px;cursor:pointer}.toggle-btn{min-width:32px;min-height:32px;background:transparent;border:0;cursor:pointer;touch-action:manipulation}
     #historicoCaderno{font-size:12px;border:1px solid #cbd5e1;border-radius:8px;padding:8px}
-    #historicoCadernoLista{max-height:280px;overflow:auto}#historicoCadernoLista strong{display:block;margin:8px 0}
+    #historicoCadernoLista{max-height:420px;overflow:auto}#historicoCadernoLista details{margin:6px 0;padding:5px;border-left:2px solid #9ab5a5}#historicoCadernoLista summary{cursor:pointer;overflow-wrap:anywhere;padding:5px;font-weight:600}#historicoCadernoLista strong{display:block;margin:8px 0}
     #historicoCadernoLista button{display:block;width:100%;text-align:left;padding:6px;overflow-wrap:anywhere;border-bottom:1px solid #cbd5e144}
     .flashcard-item{display:flex;align-items:center;justify-content:space-between;gap:6px}.flashcard-item .flashcard-header{min-width:0;flex:1;display:block}.flashcard-item .flashcard-header .truncate{white-space:normal}.flashcard-item>div:last-child{flex-shrink:0}
     #colaCadernoFlutuante{position:fixed;right:16px;bottom:20px;z-index:25;background:#234d39;color:white;padding:8px 10px;border-radius:9px;font-size:12px}
@@ -22,6 +22,10 @@
     const abrirPainel=document.createElement('button');abrirPainel.id='abrirPainelCaderno';abrirPainel.type='button';abrirPainel.textContent='📂 Painéis';abrirPainel.setAttribute('aria-controls','cadernoLateral');abrirPainel.setAttribute('aria-expanded','true');$('btnRecolherFerramentas').after(abrirPainel);
     function exibirPainel(aberto){lateral.hidden=!aberto;shell.classList.toggle('lateral-oculta',!aberto);abrirPainel.setAttribute('aria-expanded',String(aberto));}
     abrirPainel.onclick=()=>exibirPainel(lateral.hidden);
+    window.addEventListener('caderno:fechar-paineis',()=>exibirPainel(false));
+    document.addEventListener('pointerdown',event=>{
+        if(!lateral.hidden && !lateral.contains(event.target) && !abrirPainel.contains(event.target)) exibirPainel(false);
+    });
     const fechar=document.createElement('button');fechar.type='button';fechar.className='fechar-paineis';fechar.textContent='Recolher painéis →';fechar.onclick=()=>exibirPainel(false);lateral.prepend(fechar);
     $('btnRecolherFerramentas').addEventListener('click',()=>exibirPainel(!document.body.classList.contains('ferramentas-recolhidas') && window.innerWidth>=768));
     const recolherPastas=document.createElement('button');recolherPastas.type='button';recolherPastas.className='recolher-pastas';recolherPastas.textContent='−';recolherPastas.setAttribute('aria-label','Recolher pastas');recolherPastas.setAttribute('aria-expanded','true');recolherPastas.setAttribute('aria-controls','navLista');$('navTitulo').after(recolherPastas);
