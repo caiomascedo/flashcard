@@ -40,6 +40,23 @@ function abrirColaInteligente() {
         });
     }
     function registrar(ev) {eventos.unshift({...ev,data:Date.now()});eventos=eventos.slice(0,40);try{localStorage.setItem(key,JSON.stringify(eventos));}catch{}desenhar();}
+    function recuperarLotesAnteriores() {
+        const lotes=new Map();
+        flashcards.forEach(card=>{
+            if(!card.loteImportacao || !Number(card.importadoEm) || card.tipo==='questao' || card.alternativas?.length>=2 || String(card.pergunta||'').startsWith('📁 Pasta:'))return;
+            if(!lotes.has(card.loteImportacao))lotes.set(card.loteImportacao,[]);
+            lotes.get(card.loteImportacao).push(card);
+        });
+        for(const [lote,cards] of lotes) {
+            if(eventos.some(ev=>ev.lote===lote))continue;
+            const destinos=[...new Set(cards.map(c=>caminhoLivre(c).join(' › ')))];
+            eventos.push({lote,data:Number(cards[0].importadoEm),nome:`＋ ${cards.length} cards · ${destinos.join('; ')}`});
+        }
+        eventos.sort((a,b)=>b.data-a.data);eventos=eventos.slice(0,40);
+        try{localStorage.setItem(key,JSON.stringify(eventos));}catch{}
+        desenhar();
+    }
+    window.addEventListener('flashcard:pronto',recuperarLotesAnteriores,{once:true});
     function sinalizarPastas() {
         const lote=ultimoLoteImportado();if(!lote)return;
         document.querySelectorAll('.node-label[data-path]').forEach(el=>{
@@ -82,5 +99,6 @@ function abrirColaInteligente() {
             if(acao){e.preventDefault();acao();}
         }
     });
-    desenhar();sinalizarPastas();
+    recuperarLotesAnteriores();sinalizarPastas();
 })();
+
