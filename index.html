@@ -1844,6 +1844,7 @@
     </style>
 <link rel="stylesheet" href="caderno-integrado.css?v=3">
 <link rel="stylesheet" href="novos-cards.css?v=2">
+<link rel="stylesheet" href="menu-flashcard.css?v=1">
 </head>
 <body>
     <div class="auth-overlay" id="authOverlay">
@@ -1858,7 +1859,7 @@
             <p class="auth-message" id="authMessage" role="alert"></p>
         </form>
     </div>
-    <button class="logout-button" id="logoutButton" type="button" hidden>Sair</button>
+
 
     <!-- ============================================================
     TOAST
@@ -1913,13 +1914,19 @@
                 <div class="header-actions">
                     <button type="button" onclick="abrirCadernoIntegrado()">📓 Caderno completo</button>
                     <button id="modoFocoBtn" onclick="alternarModoFoco()" aria-pressed="false">🎯 Modo foco</button>
-                    <button onclick="desfazerAcao()" title="Desfazer última ação">↩️ Desfazer</button>
-                    <button onclick="abrirModelosJSON()" title="Ver modelos para adicionar conteúdo">📌 Modelos</button>
-                    <button class="questoes-btn" onclick="abrirTelaQuestoes()" title="Responder questões de múltipla escolha">📝 Questões</button>
-                    <button class="lupa-concluida" id="filtrosConcluidosBtn" onclick="alternarPainelFiltrosConcluidos()" title="Abrir lupas concluídas">🔍 Concluídos <span class="filtros-concluidos-contador" id="filtrosConcluidosCount">0</span></button>
-                    <button onclick="abrirCentralBackups()" title="Ver, baixar ou restaurar cópias de segurança">🛟 Backups</button>
-                    <button class="export-btn" onclick="exportarJSON()" title="Exportar todos os flashcards em JSON">📤 Exportar JSON</button>
-                    <button class="danger" onclick="apagarDados()" title="Apagar todos os dados">🗑️ Apagar tudo</button>
+                    <details id="menuFlashcard">
+                        <summary>☰ Menu</summary>
+                        <div class="menu-flashcard-lista" aria-label="Ações do Flashcard">
+                            <button onclick="desfazerAcao()" title="Desfazer última ação">↩️ Desfazer</button>
+                            <button onclick="abrirModelosJSON()" title="Ver modelos para adicionar conteúdo">📌 Modelos</button>
+                            <button class="questoes-btn" onclick="abrirTelaQuestoes()" title="Responder questões de múltipla escolha">📝 Questões</button>
+                            <button class="lupa-concluida" id="filtrosConcluidosBtn" onclick="alternarPainelFiltrosConcluidos()" title="Abrir lupas concluídas">🔍 Concluídos <span class="filtros-concluidos-contador" id="filtrosConcluidosCount">0</span></button>
+                            <button onclick="abrirCentralBackups()" title="Ver, baixar ou restaurar cópias de segurança">🛟 Backups</button>
+                            <button class="export-btn" onclick="exportarJSON()" title="Exportar todos os flashcards em JSON">📤 Exportar JSON</button>
+                            <button class="danger" onclick="apagarDados()" title="Apagar todos os dados">🗑️ Apagar tudo</button>
+                            <button class="logout-button" id="logoutButton" type="button" hidden>Sair</button>
+                        </div>
+                    </details>
                 </div>
             </div>
             <section class="filtros-concluidos" id="filtrosConcluidosPainel" style="display:none;">
@@ -5278,7 +5285,7 @@
             const icon = el.querySelector('.toggle-icon');
             if (children) {
                 children.classList.toggle('open');
-                if (icon) icon.classList.toggle('expanded');
+                if (icon) { icon.classList.toggle('expanded'); icon.setAttribute('aria-expanded', String(children.classList.contains('open'))); }
                 const path = el.dataset.path;
                 if (path) {
                     if (children.classList.contains('open')) pastasRecolhidas.delete(path);
@@ -5370,7 +5377,7 @@
                     ondragover="event.preventDefault();event.dataTransfer.dropEffect='move';this.classList.add('drag-over')"
                     ondragleave="this.classList.remove('drag-over')">
                     <span class="icon">${pastasFixadas.has(no.path) ? '📌' : '📂'}</span><span class="name">${no.nome}</span><span class="badge-count">${no.indices.length}</span>
-                    <span class="progress-dot ${status.status}"></span><span class="toggle-icon ${fechado ? '' : 'expanded'}">▶</span>
+                    <span class="progress-dot ${status.status}"></span><button type="button" class="toggle-icon ${fechado ? '' : 'expanded'}" aria-expanded="${!fechado}" aria-label="Abrir ou recolher pasta" onclick="event.stopPropagation();toggleNode(this.closest('.node-label'))">▶</button>
                     <span class="folder-actions"><button class="filtrar" onclick="event.stopPropagation();aplicarFiltroPorCaminho('${no.path}')" title="Filtrar">🔍</button>
                     <button class="pin" onclick="event.stopPropagation();alternarPastaFixada('${no.path}')" title="${pastasFixadas.has(no.path) ? 'Desafixar' : 'Fixar no topo'}">📌</button>
                     <button class="edit" onclick="event.stopPropagation();abrirModalEditarPasta('${no.path}')" title="Editar">✏️</button>
@@ -5937,7 +5944,7 @@
                 const chave = `questoes|${no.path}`;
                 const fechado = pastasRecolhidas.has(chave);
                 const fixada = pastasFixadas.has(chave);
-                let html = `<div class="tree-node"><div class="node-label" data-path="${chave}"><span class="icon">${fixada ? '📌' : '📂'}</span><span class="name">${escaparHTML(no.nome)}</span><span class="badge-count">${no.indices.length}</span><span class="toggle-icon ${fechado ? '' : 'expanded'}">▶</span><span class="folder-actions"><button class="pin" onclick="event.stopPropagation();alternarPastaQuestaoFixada('${no.path}')">📌</button><button class="edit" onclick="event.stopPropagation();abrirEditarPastaQuestao('${no.path}')">✏️</button><button class="mover" onclick="event.stopPropagation();abrirMoverPastaQuestao('${no.path}')">🔄</button><button class="delete" onclick="event.stopPropagation();abrirExcluirPastaQuestao('${no.path}')">🗑️</button></span></div><div class="children ${fechado ? '' : 'open'}">`;
+                let html = `<div class="tree-node"><div class="node-label" data-path="${chave}"><span class="icon">${fixada ? '📌' : '📂'}</span><span class="name">${escaparHTML(no.nome)}</span><span class="badge-count">${no.indices.length}</span><button type="button" class="toggle-icon ${fechado ? '' : 'expanded'}" aria-expanded="${!fechado}" aria-label="Abrir ou recolher pasta" onclick="event.stopPropagation();toggleNode(this.closest('.node-label'))">▶</button><span class="folder-actions"><button class="pin" onclick="event.stopPropagation();alternarPastaQuestaoFixada('${no.path}')">📌</button><button class="edit" onclick="event.stopPropagation();abrirEditarPastaQuestao('${no.path}')">✏️</button><button class="mover" onclick="event.stopPropagation();abrirMoverPastaQuestao('${no.path}')">🔄</button><button class="delete" onclick="event.stopPropagation();abrirExcluirPastaQuestao('${no.path}')">🗑️</button></span></div><div class="children ${fechado ? '' : 'open'}">`;
                 [...no.filhos.values()].sort((a, b) => (Number(pastasFixadas.has(`questoes|${b.path}`)) - Number(pastasFixadas.has(`questoes|${a.path}`))) || a.nome.localeCompare(b.nome, 'pt-BR')).forEach(filho => html += renderNo(filho));
                 if (!no.filhos.size) no.indices.forEach(index => {
                     const questao = questoes[index];
@@ -6425,7 +6432,8 @@
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=10"></script>
+<script src="caderno-integrado.js?v=11"></script>
 <script src="novos-cards.js?v=1"></script>
-<link rel="stylesheet" href="melhorias-estudo.css?v=3"><script src="melhorias-estudo.js?v=3"></script><script src="detalhes-estudo.js?v=1"></script></body>
+<link rel="stylesheet" href="melhorias-estudo.css?v=3"><script src="melhorias-estudo.js?v=3"></script><script src="detalhes-estudo.js?v=1"></script><script src="menu-flashcard.js?v=1"></script>
+</body>
 </html>

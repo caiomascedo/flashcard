@@ -2,9 +2,10 @@
     const $=id=>document.getElementById(id);
     const style=document.createElement('style');style.textContent=`
     #atalhosAssunto,#btnExportar,#btnImportar{display:none!important}
-    body.ferramentas-recolhidas #sectionEstatisticas,body.ferramentas-recolhidas #sectionPendencias{display:none!important}
-    #acoesAssuntoCompactas{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+    #acoesAssuntoCompactas{position:relative;font-size:12px}#acoesAssuntoCompactas summary{cursor:pointer;list-style:none;padding:5px 8px;border:1px solid #cbd5e1;border-radius:7px}#acoesAssuntoCompactas>div{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+    #acoesAssuntoCompactas:not([open])>div{display:none}
     #acoesAssuntoCompactas button{font-size:11px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:7px}
+    #ocultarTodasPendencias,#mostrarPendenciasOcultas{font:12px system-ui;padding:5px 7px;border:1px solid #bc9c57;border-radius:6px;background:#fff9e5;color:#6c4a0b;cursor:pointer}#mostrarPendenciasOcultas[hidden]{display:none!important}.pendencia-item{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pendencia-item>span:first-child{flex:1;min-width:100px}.pendencia-acoes{display:flex;gap:5px;flex-wrap:wrap}.pendencia-acoes button{font:11px system-ui;padding:5px 7px;border:1px solid #c7ad76;border-radius:5px;cursor:pointer}.toggle-btn{min-width:32px;min-height:32px;background:transparent;border:0;cursor:pointer;touch-action:manipulation}
     #historicoCaderno{font-size:12px;border:1px solid #cbd5e1;border-radius:8px;padding:8px}
     #historicoCadernoLista{max-height:280px;overflow:auto}#historicoCadernoLista strong{display:block;margin:8px 0}
     #historicoCadernoLista button{display:block;width:100%;text-align:left;padding:6px;overflow-wrap:anywhere;border-bottom:1px solid #cbd5e144}
@@ -12,18 +13,18 @@
     #colaCadernoFlutuante{position:fixed;right:16px;bottom:20px;z-index:25;background:#234d39;color:white;padding:8px 10px;border-radius:9px;font-size:12px}
     #colaCadernoDialog{width:min(92vw,520px);border:1px solid #94a3b8;border-radius:12px;padding:18px}#colaCadernoDialog::backdrop{background:#0007}#colaCadernoDialog textarea{width:100%;border:1px solid #94a3b8;padding:8px;margin:10px 0}
     `;document.head.append(style);
-    const a=document.createElement('div');a.id='acoesAssuntoCompactas';$('btnRecolherFerramentas').after(a);
-    a.append($('btnPaginaHoje'),$('btnFlashcardErro'));
-    const hist=document.createElement('details');hist.id='historicoCaderno';hist.innerHTML='<summary>🕘 Histórico de cadernos e cards</summary><div id="historicoCadernoLista"></div>';$('sectionFlashcards').parentElement.after(hist);
+    const a=document.createElement('details');a.id='acoesAssuntoCompactas';a.innerHTML='<summary>📅 Ações do assunto</summary><div></div>';$('btnRecolherFerramentas').after(a);
+    a.lastElementChild.append($('btnPaginaHoje'),$('btnFlashcardErro'));
+    const hist=document.createElement('details');hist.id='historicoCaderno';hist.innerHTML='<summary>🕘 Histórico de cadernos e cards</summary><div id="historicoCadernoLista"></div>';$('sectionEstatisticas').parentElement.after(hist);
     hist.addEventListener('toggle',()=>window.atualizarHistoricoCaderno?.());
     const lateral=$('painelPastas').parentElement;lateral.id='cadernoLateral';
     const shell=lateral.parentElement;shell.id='cadernoLayout';
     const abrirPainel=document.createElement('button');abrirPainel.id='abrirPainelCaderno';abrirPainel.type='button';abrirPainel.textContent='📂 Painéis';abrirPainel.setAttribute('aria-controls','cadernoLateral');abrirPainel.setAttribute('aria-expanded','true');$('btnRecolherFerramentas').after(abrirPainel);
     function exibirPainel(aberto){lateral.hidden=!aberto;shell.classList.toggle('lateral-oculta',!aberto);abrirPainel.setAttribute('aria-expanded',String(aberto));}
-    abrirPainel.onclick=()=>{const abrir=lateral.hidden;if(abrir && document.body.classList.contains('ferramentas-recolhidas'))$('btnRecolherFerramentas').click();exibirPainel(abrir);};
+    abrirPainel.onclick=()=>exibirPainel(lateral.hidden);
     const fechar=document.createElement('button');fechar.type='button';fechar.className='fechar-paineis';fechar.textContent='Recolher painéis →';fechar.onclick=()=>exibirPainel(false);lateral.prepend(fechar);
     $('btnRecolherFerramentas').addEventListener('click',()=>exibirPainel(!document.body.classList.contains('ferramentas-recolhidas') && window.innerWidth>=768));
-    const recolherPastas=document.createElement('button');recolherPastas.type='button';recolherPastas.className='recolher-pastas';recolherPastas.textContent='−';recolherPastas.setAttribute('aria-label','Recolher pastas');recolherPastas.setAttribute('aria-expanded','true');$('navTitulo').after(recolherPastas);
+    const recolherPastas=document.createElement('button');recolherPastas.type='button';recolherPastas.className='recolher-pastas';recolherPastas.textContent='−';recolherPastas.setAttribute('aria-label','Recolher pastas');recolherPastas.setAttribute('aria-expanded','true');recolherPastas.setAttribute('aria-controls','navLista');$('navTitulo').after(recolherPastas);
     recolherPastas.onclick=()=>{const lista=$('navLista');lista.hidden=!lista.hidden;recolherPastas.textContent=lista.hidden?'+':'−';recolherPastas.setAttribute('aria-expanded',String(!lista.hidden));recolherPastas.setAttribute('aria-label',lista.hidden?'Abrir pastas':'Recolher pastas');};
     function decorarPastas(){
         const lista=$('navLista');const paginas=!!lista.querySelector('[onclick^="abrirPagina"]');lista.classList.toggle('pastas-quadradas',!paginas);
@@ -33,7 +34,7 @@
             linha.dataset.pastaDecorada='true';linha.classList.add('pasta-quadrada');
             const botao=document.createElement('button');botao.type='button';botao.className='pasta-abrir';
             const imagem=document.createElement('img');imagem.src='pasta-estudo.svg';imagem.alt='';imagem.width=76;imagem.height=60;
-            const texto=document.createElement('span');texto.textContent=nome.textContent.replace(/^[🏛️📚📌\s]+/u,'').trim();botao.title=texto.textContent;botao.setAttribute('aria-label','Abrir pasta '+texto.textContent);botao.append(imagem,texto);botao.onclick=()=>nome.click();nome.replaceWith(botao);
+            const texto=document.createElement('span');texto.textContent=nome.textContent.replace(/^[🏛️📚📌\s]+/u,'').trim();botao.title=texto.textContent;botao.setAttribute('aria-label','Abrir pasta '+texto.textContent);botao.append(imagem,texto);const acao=nome.getAttribute('onclick').match(/^(abrirConcurso|abrirMateria|abrirAssunto)\((\d+)\)$/);botao.onclick=()=>{if(acao)window[acao[1]](Number(acao[2]));};nome.replaceWith(botao);
         }
     }
     new MutationObserver(decorarPastas).observe($('navLista'),{childList:true,subtree:true});decorarPastas();
@@ -58,12 +59,12 @@
     // Seções iniciam compactas, mas continuam expansíveis individualmente.
     for(const name of ['Estatisticas','Pendencias']){
         $('section'+name).classList.add('minimized');
-        document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).textContent='+';
+        document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).textContent='+';document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).setAttribute('aria-expanded','false');
     }
     $('btnRecolherFerramentas').addEventListener('click',()=>{
         if(!document.body.classList.contains('ferramentas-recolhidas'))return;
         for(const name of ['Estatisticas','Pendencias']){
-            $('section'+name).classList.add('minimized');document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).textContent='+';
+            $('section'+name).classList.add('minimized');document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).textContent='+';document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).setAttribute('aria-expanded','false');
         }
     });
     const dialog=document.createElement('dialog');dialog.id='colaCadernoDialog';dialog.innerHTML='<h3>📋 Cola inteligente</h3><p>Cole pergunta e resposta separadas por uma linha em branco (Shift+Enter duas vezes). Revise antes de salvar.</p><textarea rows="8" aria-label="Pergunta e resposta juntas"></textarea><button type="button" id="revisarColaCaderno">Revisar flashcard</button> <button type="button" id="fecharColaCaderno">Cancelar</button>';document.body.append(dialog);

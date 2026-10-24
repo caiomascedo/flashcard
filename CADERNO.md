@@ -42,3 +42,21 @@ após adicionar novas classes ao HTML, use um arquivo de entrada com
 ```sh
 npx --yes tailwindcss@3.4.17 -i /caminho/entrada.css -o caderno-base.css --content caderno.html --minify
 ```
+
+## Menu e painéis compactos
+
+As ações do Flashcard, incluindo Sair, ficam em **Menu** no topo. No caderno,
+**Ações do assunto** começa fechado e o histórico fica abaixo de Estatísticas.
+Os controles de expansão são botões nativos para toque e teclado.
+
+Pendências podem ser ocultadas por matéria ou pelo painel inteiro após confirmação.
+**Mostrar ocultas** restaura a lista; a preferência é salva neste navegador e
+não exclui cards ou anotações.
+
+Os fluxos de menu, confirmação, restauração e expansão são verificados em
+Chromium e WebKit, com telas de celular e computador:
+
+```sh
+python -m playwright install chromium webkit
+python -m pytest -q tests/test_menu_paineis.py
+```

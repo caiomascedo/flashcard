@@ -456,12 +456,11 @@
             </section>
         <div id="editor" class="editor p-4 border" contenteditable="true"></div>
         <div class="flex justify-between items-center mt-2 px-1"><div id="autoSaveIndicator"><div class="dot"></div><span id="autoSaveText">salvo</span></div><div id="wordCount">0 palavras</div></div>
-        <div class="text-xs text-gray-400 mt-1">📸 Toque na imagem | 🖍️ Selecione texto | 📊 Tabela | <b>1.</b> + espaço = lista numerada | <b>-</b> + espaço = marcadores | 🎹 Ctrl+F = Flashcard | Ctrl+P = Buscar | Ctrl+Alt+E = Expandir | Esc = Sair | 🔢 1,2,3,4 = Responder flashcards</div>
     </div>
 
     <div class="w-full md:w-80 bg-white rounded-2xl shadow-md border p-4 flex flex-col gap-3">
         <div class="bg-green-50 rounded-lg p-2">
-            <div class="section-header" data-section="estatisticas"><h3 class="font-bold text-green-700 text-sm">📊 Estatísticas</h3><span class="toggle-btn" data-section="estatisticas">−</span></div>
+            <div class="section-header" data-section="estatisticas"><h3 class="font-bold text-green-700 text-sm">📊 Estatísticas</h3><button type="button" class="toggle-btn" data-section="estatisticas" aria-controls="sectionEstatisticas" aria-expanded="true" aria-label="Abrir ou recolher estatisticas">−</button></div>
             <div id="sectionEstatisticas" class="section-content text-xs space-y-1">
                 <div>✅ Revisões hoje: <span id="revisoesHoje" class="font-semibold">0</span></div>
                 <div>🔥 Sequência: <span id="streak" class="font-semibold">0</span> dias</div>
@@ -471,10 +470,12 @@
             </div>
         </div>
         <div id="pendenciasContainer" class="bg-yellow-50 rounded-lg p-2 hidden">
-            <div class="section-header" data-section="pendencias"><h3 class="font-bold text-yellow-700 text-sm">⚠️ Pendências por matéria</h3><span class="toggle-btn" data-section="pendencias">−</span></div>
+            <div class="section-header" data-section="pendencias"><h3 class="font-bold text-yellow-700 text-sm">⚠️ Pendências por matéria</h3><button type="button" class="toggle-btn" data-section="pendencias" aria-controls="sectionPendencias" aria-expanded="true" aria-label="Abrir ou recolher pendencias">−</button></div>
+            <button type="button" id="ocultarTodasPendencias" data-nao-alternar>Ocultar pendências</button>
             <div id="sectionPendencias" class="section-content"><div id="listaPendencias" class="text-xs space-y-1 max-h-56 overflow-y-auto"></div></div>
         </div>
 
+        <button type="button" id="mostrarPendenciasOcultas" hidden>Mostrar ocultas</button>
         <div id="painelPastas" class="bg-gray-50 rounded-lg p-2 border" style="scroll-margin-top:80px">
             
             <div id="navBreadcrumb" class="flex flex-wrap items-center gap-1 text-xs text-gray-500 mb-2"></div>
@@ -486,7 +487,7 @@
         </div>
 
         <button id="btnEstudar" class="mt-1 bg-purple-600 text-white py-1 rounded-full text-sm">📖 Estudar (assunto atual)</button>
-        <div><div class="section-header" data-section="flashcards"><h2 class="font-semibold text-gray-700 text-sm">🎴 Flashcards</h2><span class="toggle-btn" data-section="flashcards">−</span></div><div class="section-content" id="sectionFlashcards"><div id="previewFlashcard" class="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-1 max-h-48 overflow-y-auto"></div></div></div>
+        <div><div class="section-header" data-section="flashcards"><h2 class="font-semibold text-gray-700 text-sm">🎴 Flashcards</h2><button type="button" class="toggle-btn" data-section="flashcards" aria-controls="sectionFlashcards" aria-expanded="true" aria-label="Abrir ou recolher flashcards">−</button></div><div class="section-content" id="sectionFlashcards"><div id="previewFlashcard" class="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-1 max-h-48 overflow-y-auto"></div></div></div>
     </div>
 </div>
 
@@ -754,38 +755,48 @@ function registrarAlteracaoLocal() {
         document.getElementById('statsHeader').innerHTML = `${pendentes} pend.`;
     }
     
+    const preferenciasPendenciasKey = 'caderno_pendencias_ocultas_v1';
+    let pendenciasOcultas = {};
+    try { const saved = JSON.parse(localStorage.getItem(preferenciasPendenciasKey) || '{}'); if (saved && typeof saved === 'object' && !Array.isArray(saved)) pendenciasOcultas = saved; } catch {}
+    function guardarPendenciasOcultas() {
+        localStorage.setItem(preferenciasPendenciasKey, JSON.stringify(pendenciasOcultas));
+        atualizarPendencias();
+    }
+    window.ocultarPendenciaMateria = function(chave, nome) {
+        if (!confirm('Ocultar as pendências de ' + decodeURIComponent(nome) + '? Você pode recuperá-las em Mostrar ocultas.')) return;
+        pendenciasOcultas[chave] = true;
+        guardarPendenciasOcultas();
+    };
+    document.getElementById('ocultarTodasPendencias').onclick = () => {
+        if (!confirm('Ocultar o painel de pendências? Você pode recuperá-lo em Mostrar ocultas.')) return;
+        pendenciasOcultas.painel = true; guardarPendenciasOcultas();
+    };
+    document.getElementById('mostrarPendenciasOcultas').onclick = () => { pendenciasOcultas = {}; guardarPendenciasOcultas(); };
     function atualizarPendencias() {
+        document.getElementById('mostrarPendenciasOcultas').hidden = !Object.keys(pendenciasOcultas).length;
         const pendentes = dados.flashcards.filter(f => new Date(f.proxima_revisao) <= new Date());
-        if (pendentes.length === 0) {
-            document.getElementById('pendenciasContainer').classList.add('hidden');
-            return;
-        }
-        
-        // Agrupar por matéria
-        const porMateria = {};
-        pendentes.forEach(f => {
+        const porMateria = new Map();
+        for (const f of pendentes) {
             const concurso = dados.concursos.find(c => c.id == f.concursoId);
             const materia = concurso?.materias?.find(m => m.id == f.materiaId);
-            const materiaNome = materia ? `${concurso?.nome || '?'} - ${materia.nome}` : 'Sem matéria';
-            if (!porMateria[materiaNome]) {
-                porMateria[materiaNome] = { count: 0, concursoId: f.concursoId, materiaId: f.materiaId };
-            }
-            porMateria[materiaNome].count++;
-        });
-        
+            const chave = encodeURIComponent(JSON.stringify([f.concursoId, f.materiaId]));
+            if (pendenciasOcultas[chave]) continue;
+            if (!porMateria.has(chave)) porMateria.set(chave, {count:0, concursoId:f.concursoId, materiaId:f.materiaId, nome:materia ? `${concurso?.nome || '?'} - ${materia.nome}` : 'Sem matéria'});
+            porMateria.get(chave).count++;
+        }
         const container = document.getElementById('listaPendencias');
-        container.innerHTML = Object.entries(porMateria).map(([nome, info]) => `
-            <div class="pendencia-item flex justify-between items-center" onclick="irParaMateria(${info.concursoId}, ${info.materiaId})">
-                <span>📚 ${escapar(nome)}</span>
-                <div class="flex gap-2 items-center">
-                    <span class="bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full text-xs">${info.count} pend.</span>
-                    <button onclick="event.stopPropagation(); irParaMateria(${info.concursoId}, ${info.materiaId})" class="bg-purple-500 text-white px-2 py-0.5 rounded text-xs">📖 Estudar</button>
+        container.innerHTML = [...porMateria].map(([chave, info]) => `
+            <div class="pendencia-item">
+                <span>📚 ${escapar(info.nome)}</span>
+                <span>${info.count} pend.</span>
+                <div class="pendencia-acoes">
+                    <button type="button" data-concurso="${encodeURIComponent(JSON.stringify(info.concursoId ?? null))}" data-materia="${encodeURIComponent(JSON.stringify(info.materiaId ?? null))}" onclick="irParaMateria(JSON.parse(decodeURIComponent(this.dataset.concurso)), JSON.parse(decodeURIComponent(this.dataset.materia)))">📖 Estudar</button>
+                    <button type="button" data-chave="${chave}" data-nome="${encodeURIComponent(info.nome)}" onclick="ocultarPendenciaMateria(this.dataset.chave, this.dataset.nome)">Ocultar</button>
                 </div>
-            </div>
-        `).join('');
-        document.getElementById('pendenciasContainer').classList.remove('hidden');
+            </div>`).join('');
+        document.getElementById('pendenciasContainer').classList.toggle('hidden', !!pendenciasOcultas.painel || !porMateria.size);
     }
-    
+
     window.irParaMateria = function(concursoId, materiaId) {
         salvarEditor();
         concursoAtualId = concursoId;
@@ -1827,15 +1838,16 @@ function registrarAlteracaoLocal() {
         if (!content || !btn) return;
         if (content.classList.contains('minimized')) { content.classList.remove('minimized'); btn.textContent = '−'; }
         else { content.classList.add('minimized'); btn.textContent = '+'; }
+        btn.setAttribute('aria-expanded', String(!content.classList.contains('minimized')));
         let estado = JSON.parse(localStorage.getItem('minimizado') || '{}'); estado[sectionId] = content.classList.contains('minimized'); localStorage.setItem('minimizado', JSON.stringify(estado));
     }
     function initMinimizado() {
         const salvo = localStorage.getItem('minimizado');
         const estado = JSON.parse(salvo || '{}');
         if (!salvo && window.innerWidth <= 768) { estado.estatisticas = true; estado.pendencias = true; localStorage.setItem('minimizado', JSON.stringify(estado)); }
-        ['flashcards', 'estatisticas', 'pendencias'].forEach(s => { const content = document.getElementById(`section${s.charAt(0).toUpperCase() + s.slice(1)}`); const btn = document.querySelector(`.toggle-btn[data-section="${s}"]`); if (content && estado[s]) { content.classList.add('minimized'); if (btn) btn.textContent = '+'; } });
+        ['flashcards', 'estatisticas', 'pendencias'].forEach(s => { const content = document.getElementById(`section${s.charAt(0).toUpperCase() + s.slice(1)}`); const btn = document.querySelector(`.toggle-btn[data-section="${s}"]`); if (content && estado[s]) { content.classList.add('minimized'); if (btn) { btn.textContent = '+'; btn.setAttribute('aria-expanded', 'false'); } } });
     }
-    document.querySelectorAll('.section-header').forEach(h => { const secao = h.getAttribute('data-section'); h.addEventListener('click', (e) => { if (e.target.classList && e.target.classList.contains('toggle-btn')) return; toggleSection(secao); }); const btn = h.querySelector('.toggle-btn'); if (btn) { btn.addEventListener('click', (e) => { e.stopPropagation(); toggleSection(secao); }); } });
+    document.querySelectorAll('.section-header').forEach(h => { h.addEventListener('click', e => { if (e.target.closest('[data-nao-alternar]')) return; toggleSection(h.dataset.section); }); });
     document.getElementById('btnIrPastas').onclick = () => { salvarEditor(); navLevel = 'concursos'; renderNav(); document.getElementById('painelPastas').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
     if (!dados.concursos.length) { dados.concursos = [{ id: 1, nome: "PMPI", materias: [{ id: 11, nome: "Português", assuntos: [{ id: 111, nome: "Concordância", paginas: [{ id: 1110, titulo: "Página 1", data: new Date().toISOString(), cadernoHTML: "<p>Exemplo. <strong>Negrito</strong> e <em>itálico</em> funcionam!</p>" }], paginaAtualId: 1110 }], assuntoAtualId: 111 }], materiaAtualId: 11 }]; dados.flashcards = [{ id: 1001, concursoId: 1, materiaId: 11, assuntoId: 111, pergunta: "O que é concordância?", resposta: "Verbo concorda com o sujeito.", tags: ["gramática"], intervalo: 0, repeticoes: 0, facilidade: 2.5, proxima_revisao: new Date().toISOString() }]; salvarTudo(); }
@@ -2121,6 +2133,6 @@ if (supabaseOk) {
     document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
 }
 </script>
-<script src="melhorias-caderno.js?v=3"></script></body>
+<script src="melhorias-caderno.js?v=4"></script></body>
 </html>
 
