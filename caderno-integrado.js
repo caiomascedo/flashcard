@@ -103,7 +103,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=13', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=14', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -170,7 +170,7 @@
         if(event.data?.tipo==='caderno:estudar-assunto'){
             sincronizarCards();const ids=new Set(event.data.ids||[]);const indices=flashcards.map((c,i)=>ids.has(String(c.cadernoId))?i:-1).filter(i=>i>=0);
             if(!indices.length){status.textContent='Envie os cards deste assunto ao Flashcard antes de estudar por aqui.';return;}
-            filtroAtivo={tipo:'lista',nome:'Cards do caderno por assunto'};indicesFiltrados=indices;modoFilaErros=false;modoRevisao=false;indiceAtual=indices[0];atualizarCard();salvarEstado();dialog.close();return;
+            filtroAtivo={tipo:'lista',nome:'Cards do caderno por assunto'};filtroNome.textContent=filtroAtivo.nome;filtroInfo.style.display='inline';limparFiltroBtn.style.display='inline-block';indicesFiltrados=indices;modoFilaErros=false;modoRevisao=false;indiceAtual=indices[0];atualizarCard();salvarEstado();dialog.close();return;
         }
 
         if (event.data?.tipo === 'caderno:pronto') {

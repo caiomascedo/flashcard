@@ -372,7 +372,7 @@
         #btnRecolherFerramentas:focus-visible { outline:3px solid #16a34a; outline-offset:2px; }
         body.dark-mode #btnRecolherFerramentas { background:#334155; color:#e2e8f0; }
     </style>
-<link rel="stylesheet" href="calendario-revisoes.css?v=1">
+<link rel="stylesheet" href="calendario-revisoes.css?v=2">
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen pb-16">
 
@@ -683,6 +683,7 @@ function registrarAlteracaoLocal() {
     window.CalendarioFonte={context:'caderno',beforeRender:()=>{const cb=document.getElementById('responderPeloFlashcard');if(cb)cb.checked=dados.responderSomenteFlashcard!==false;},loadMarks:()=>dados.calendarioMarcacoes||{},saveMarks:marks=>{dados.calendarioMarcacoes=marks;salvarTudo();},attach(open){
         document.getElementById('btnCronograma').onclick=open;document.getElementById('btnCronograma').title='Calendário de revisões';
         const old=document.getElementById('modalCronograma');if(old)old.style.display='none';const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.id='responderPeloFlashcard';check.checked=dados.responderSomenteFlashcard!==false;label.append(check,document.createTextNode(' Responder os cards pelo Flashcard'));document.getElementById('calendarioRevisoes').querySelector('nav').after(label);check.onchange=()=>{dados.responderSomenteFlashcard=check.checked;salvarTudo();};
+        const responderCaderno=document.createElement('button');responderCaderno.type='button';responderCaderno.id='responderCardsCaderno';responderCaderno.textContent='▶ Responder cards deste caderno';responderCaderno.onclick=()=>{const cards=dados.flashcards.filter(f=>f.concursoId==concursoAtualId&&f.materiaId==materiaAtualId&&f.assuntoId==assuntoAtualId);if(!cards.length){toast('Nenhum card cadastrado neste assunto.');return;}window.CalendarioFonte.open({cards});};document.getElementById('wordCount').after(responderCaderno);document.getElementById('wordCount').parentElement.style.flexWrap='wrap';
         const reminder=document.createElement('div');reminder.id='avisoCardsAssunto';document.getElementById('editor').before(reminder);
         const refresh=()=>{reminder.replaceChildren();const cards=dados.flashcards.filter(f=>f.concursoId==concursoAtualId&&f.materiaId==materiaAtualId&&f.assuntoId==assuntoAtualId);if(!cards.length)return;reminder.append(document.createTextNode('🎴 '+cards.length+' cards deste assunto para praticar.'));const button=document.createElement('button');button.type='button';button.textContent='Responder cards';button.onclick=()=>{window.CalendarioFonte.open({cards});};reminder.append(button);};
         window.addEventListener('caderno:alterado',refresh);window.addEventListener('caderno:pronto-local',refresh);new MutationObserver(refresh).observe(document.getElementById('nomeAssunto'),{childList:true});refresh();
@@ -693,7 +694,7 @@ function registrarAlteracaoLocal() {
             for(const pg of a.paginas||[]){const created=new Date(pg.data);if(Number.isNaN(+created))continue;const dates=[0,1,7,30].map(n=>{const d=new Date(created);d.setDate(d.getDate()+n);return dateKey(d);});if(dates.includes(day))tasks.push({id:'pagina:'+c.id+':'+m.id+':'+a.id+':'+pg.id,group,title:a.nome+' · '+pg.titulo,actionLabel:'Revisar caderno',c,m,a,pg});}
         }return tasks;
     },open(task){window.dispatchEvent(new Event('caderno:fechar-paineis'));if(task.cards){
-        if(integrado&&dados.responderSomenteFlashcard!==false){if(task.cards.some(c=>c.enviarFlashcard===false)){if(!confirm('Enviar os cards deste assunto ao Flashcard para responder por lá?'))return;task.cards.forEach(c=>c.enviarFlashcard=true);salvarTudo();}window.parent.postMessage({tipo:'caderno:estudar-assunto',ids:task.cards.map(c=>String(c.id))},location.origin);return;}
+        if(integrado&&dados.responderSomenteFlashcard!==false){if(task.cards.some(c=>c.enviarFlashcard===false)){if(!confirm('Enviar os cards selecionados ao Flashcard para responder por lá?'))return;task.cards.forEach(c=>c.enviarFlashcard=true);salvarTudo();}window.parent.postMessage({tipo:'caderno:estudar-assunto',ids:task.cards.map(c=>String(c.id))},location.origin);return;}
         studyQueue=task.cards.slice();studyIdx=0;studySessionTotal=studyQueue.length;estudoModalAberto=true;abrirModal('modalEstudo');mostrarCard();
     }else{salvarEditor();concursoAtualId=task.c.id;materiaAtualId=task.m.id;assuntoAtualId=task.a.id;navLevel='paginas';abrirPagina(task.pg.id);atualizarPreview();}}
     };
@@ -922,6 +923,7 @@ function registrarAlteracaoLocal() {
         if (pagina) {
             const editorClone = document.getElementById('editor').cloneNode(true);
             editorClone.querySelectorAll('mark.search-highlight').forEach(marca => { const pai = marca.parentNode; while (marca.firstChild) pai.insertBefore(marca.firstChild, marca); marca.remove(); pai.normalize(); });
+            if(pagina.cadernoHTML!==editorClone.innerHTML){const d=new Date();const dia=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;dados.cadernosTrabalhadosDia ||= {};dados.cadernosTrabalhadosDia[dia+'|'+concurso.id+':'+materia.id+':'+assunto.id+':'+pagina.id]=true;pagina.atualizadoEm=d.toISOString();}
             pagina.cadernoHTML = editorClone.innerHTML;
             localStorage.setItem('dados_concursos', JSON.stringify(dados)); registrarAlteracaoLocal(); atualizarStats(); indicarSalvo();
         }
@@ -1421,8 +1423,20 @@ function registrarAlteracaoLocal() {
     window.atualizarHistoricoCaderno = function() {
         const lista=document.getElementById('historicoCadernoLista');if(!lista)return;
         lista.replaceChildren();
+        const dataLocal=v=>{const d=new Date(v);return Number.isNaN(+d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+        for(const [offset,nome]of [[0,'Hoje'],[-1,'Ontem']]){
+            const dia=new Date();dia.setDate(dia.getDate()+offset);const chave=dataLocal(dia),pasta=document.createElement('details'),titulo=document.createElement('summary');pasta.id=offset===0?'historicoHoje':'historicoOntem';pasta.append(titulo);const grupos=new Map();let quantidade=0;
+            const adicionar=(c,m,a,texto,task)=>{const grupo=[c.nome,m.nome,a.nome].join(' › ');if(!grupos.has(grupo)){const d=document.createElement('details'),sum=document.createElement('summary');sum.textContent=grupo;d.append(sum);pasta.append(d);grupos.set(grupo,d);}const button=document.createElement('button');button.type='button';button.textContent=texto;button.onclick=()=>window.CalendarioFonte.open(task);grupos.get(grupo).append(button);quantidade++;};
+            for(const c of dados.concursos)for(const m of c.materias||[])for(const a of m.assuntos||[]){
+                for(const pg of a.paginas||[]){const revisado=!!dados.calendarioMarcacoes?.[chave+'|pagina:'+c.id+':'+m.id+':'+a.id+':'+pg.id];const atualizado=!!dados.cadernosTrabalhadosDia?.[chave+'|'+c.id+':'+m.id+':'+a.id+':'+pg.id];if(dataLocal(pg.data)===chave||revisado||atualizado)adicionar(c,m,a,(revisado?'✓ Revisado · ':atualizado?'✏️ Atualizado · ':'📓 Caderno · ')+pg.titulo,{c,m,a,pg});}
+                for(const card of dados.flashcards.filter(f=>f.concursoId==c.id&&f.materiaId==m.id&&f.assuntoId==a.id)){
+                    const criado=card.criadoEm||(Number(card.id)>1e12?Number(card.id):null);const respondido=dataLocal(card.ultima_revisao)===chave||!!dados.revisoesCalendario?.[chave+'|'+card.id];if((criado&&dataLocal(criado)===chave)||respondido)adicionar(c,m,a,(respondido?'✓ Respondido · ':'🎴 Novo card · ')+card.pergunta,{cards:[card]});
+                }
+            }
+            titulo.textContent='📅 '+nome+' · '+quantidade+' registros';if(!quantidade){const vazio=document.createElement('small');vazio.textContent='Sem registros neste dia.';pasta.append(vazio);}lista.append(pasta);
+        }
         for (const c of dados.concursos) for (const m of c.materias || []) {
-            const materia=document.createElement('details');
+            const materia=document.createElement('details');materia.className='historico-materia';
             const cab=document.createElement('summary');cab.textContent=c.nome+' › '+m.nome;materia.append(cab);
             for (const a of m.assuntos || []) {
                 const cards=dados.flashcards.filter(f=>f.concursoId==c.id && f.materiaId==m.id && f.assuntoId==a.id);
@@ -2024,6 +2038,7 @@ function registrarAlteracaoLocal() {
         if (!cardJaExiste) {
             dados.flashcards.push({
                 id: Date.now() + Math.floor(Math.random() * 1000),
+                criadoEm:new Date().toISOString(),
                 concursoId: concurso.id,
                 materiaId: materia.id,
                 assuntoId: assunto.id,
@@ -2220,7 +2235,7 @@ if (supabaseOk) {
 }
 window.dispatchEvent(new Event('calendario:fonte-pronta'));
 </script>
-<script src="melhorias-caderno.js?v=6"></script><script src="calendario-revisoes.js?v=1"></script>
+<script src="melhorias-caderno.js?v=6"></script><script src="calendario-revisoes.js?v=2"></script>
 </body>
 </html>
 
