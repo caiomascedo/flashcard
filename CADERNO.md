@@ -61,6 +61,14 @@ python -m playwright install chromium webkit
 python -m pytest -q tests/test_menu_paineis.py
 ```
 
+## Janelas ajustáveis
+
+O caderno integrado e o rascunho compartilham `janelas-flashcard.js/css`:
+arrastar o cabeçalho ou **✥ Mover** muda a posição; bordas e o canto inferior
+direito alteram o tamanho. A geometria ajustada é preservada ao expandir/reduzir
+e limitada ao espaço visível, sem recriar os iframes nem alterar seu conteúdo.
+Verificação: `python -m pytest -q tests/test_janelas.py`.
+
 ## Calendário de revisões
 
 O antigo cronograma é substituído pelo calendário mensal. Cards são separados por

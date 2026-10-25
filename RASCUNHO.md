@@ -7,6 +7,11 @@ O seletor **Tema**, no cabeçalho, alterna entre claro e escuro. A preferência
 é mantida neste navegador, sem alterar os desenhos existentes.
 **⤢ Expandir** ocupa toda a área visível e recolhe o cabeçalho para dar mais
 espaço ao quadro. **⤡ Reduzir** restaura o tamanho e os controles anteriores.
+O cabeçalho e o botão **✥ Mover** permitem arrastar a janela. Arrastar bordas ou
+o canto **⤡** altera o tamanho. O mesmo controle está disponível no caderno de
+erros. Expandir e reduzir preservam o ajuste durante a sessão; os controles
+permanecem dentro da área visível. Duplo clique em Mover volta à posição padrão.
+Mover e o canto inferior direito também aceitam setas do teclado.
 **📚 Salvar na biblioteca** guarda a seleção ou o desenho inteiro quando nada
 estiver selecionado. A biblioteca nativa também é salva automaticamente neste
 navegador, incluindo inclusões e exclusões feitas pelo painel. Seus desenhos e

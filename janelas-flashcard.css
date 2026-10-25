@@ -1,0 +1,38 @@
+/* Geometry is independent of the editor, and full-screen modes retain precedence. */
+#rascunhoFlashcard[open].janela-ajustada:not(.rascunho-expandido),
+#cadernoIntegradoDialog[open].janela-ajustada:not(.caderno-maximizado):not(.caderno-editor-expandido) {
+  inset: auto; margin: 0; transform: none;
+  left: var(--janela-left); top: var(--janela-top);
+  width: var(--janela-width); height: var(--janela-height);
+}
+.janela-flashcard .janela-barra-mover { cursor: move; touch-action: none; }
+.janela-flashcard.janela-manipulando { user-select: none; }
+.janela-flashcard.janela-manipulando iframe { pointer-events: none; }
+#rascunhoFlashcard .janela-mover, #cadernoIntegradoDialog .janela-mover {
+  cursor: move; touch-action: none; margin-left: 0; flex: 0 0 auto;
+}
+#rascunhoFlashcard .janela-redimensionar, #cadernoIntegradoDialog .janela-redimensionar {
+  position: absolute; z-index: 50; margin: 0; padding: 0; min-height: 0; min-width: 0;
+  border: 0; border-radius: 0; background: transparent; touch-action: none;
+}
+.janela-flashcard .janela-n, .janela-flashcard .janela-s { left: 16px; right: 16px; height: 7px; cursor: ns-resize; }
+.janela-flashcard .janela-n { top: 0; }
+.janela-flashcard .janela-s { bottom: 0; }
+.janela-flashcard .janela-e, .janela-flashcard .janela-w { top: 16px; bottom: 16px; width: 7px; cursor: ew-resize; }
+.janela-flashcard .janela-e { right: 0; }
+.janela-flashcard .janela-w { left: 0; }
+.janela-flashcard .janela-ne, .janela-flashcard .janela-nw, .janela-flashcard .janela-se, .janela-flashcard .janela-sw { width: 18px; height: 18px; }
+.janela-flashcard .janela-ne { top: 0; right: 0; cursor: nesw-resize; }
+.janela-flashcard .janela-nw { top: 0; left: 0; cursor: nwse-resize; }
+.janela-flashcard .janela-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+#rascunhoFlashcard .janela-se, #cadernoIntegradoDialog .janela-se {
+  bottom: 0; right: 0; cursor: nwse-resize; width: 24px; height: 24px;
+  border-radius: 6px 0 0 0; background: #274c46; color: #fff; font: 20px/24px system-ui;
+}
+.janela-flashcard.rascunho-expandido .janela-redimensionar, .janela-flashcard.rascunho-expandido .janela-mover,
+.janela-flashcard.caderno-maximizado .janela-redimensionar, .janela-flashcard.caderno-maximizado .janela-mover,
+.janela-flashcard.caderno-editor-expandido .janela-redimensionar, .janela-flashcard.caderno-editor-expandido .janela-mover { display: none !important; }
+.janela-flashcard.rascunho-expandido .janela-barra-mover, .janela-flashcard.caderno-maximizado .janela-barra-mover { cursor: default; }
+@media (max-width: 600px) {
+  .janela-flashcard .janela-mover span { display: none; }
+}
