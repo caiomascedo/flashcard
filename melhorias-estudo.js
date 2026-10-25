@@ -15,26 +15,57 @@
     const abrirConcluidos=alternarPainelFiltrosConcluidos;alternarPainelFiltrosConcluidos=function(){atividade.open=true;return abrirConcluidos();};
     function desenhar() {
         const lista=painel.querySelector('div');lista.replaceChildren();
-        if(!eventos.length)lista.textContent='As próximas importações e lupas aparecerão aqui.';
-        eventos.slice(0,20).forEach(ev=>{
-            const grupo=document.createElement('details');grupo.className='historico-pasta';
-            const summary=document.createElement('summary');
-            const cards=ev.lote?indicesDoLote(ev.lote).map(i=>flashcards[i]):[];
-            const nome=ev.lote?`${cards.length} ${cards.length===1?'card importado':'cards importados'}`:String(ev.filtro||ev.nome).replace(/^🔍\s*/,'');
-            summary.textContent=`📁 ${nome}`;summary.title=new Date(ev.data).toLocaleString('pt-BR');grupo.append(summary);
-            const meta=document.createElement('small');meta.textContent=new Date(ev.data).toLocaleString('pt-BR');grupo.append(meta);
-            const b=document.createElement('button');b.type='button';b.textContent=ev.lote?'▶ Estudar este lote':'🔍 Abrir esta seleção';
-            b.onclick=()=>ev.lote?iniciarNovosCards(ev.lote):ev.path?aplicarFiltroPorCaminho(ev.path):aplicarFiltro(ev.nivel,ev.filtro);grupo.append(b);
-            if(ev.lote){
-                const raiz={filhos:new Map(),path:[]};
-                cards.forEach(c=>{let no=raiz;caminhoLivre(c).forEach(parte=>{if(!no.filhos.has(parte))no.filhos.set(parte,{filhos:new Map(),path:[...no.path,parte]});no=no.filhos.get(parte);});});
-                const mostrar=(no,container)=>no.filhos.forEach((filho,nome)=>{
-                    const pasta=document.createElement('details');pasta.className='historico-pasta';const titulo=document.createElement('summary');titulo.textContent=`📂 ${nome}`;pasta.append(titulo);
-                    const abrir=document.createElement('button');abrir.type='button';abrir.textContent='🔍 Estudar pasta';abrir.onclick=()=>aplicarFiltroPorCaminho(filho.path.join('|'));pasta.append(abrir);mostrar(filho,pasta);container.append(pasta);
-                });mostrar(raiz,grupo);
-            }
-            lista.append(grupo);
+        if(!eventos.length) { lista.textContent='As próximas importações e lupas aparecerão aqui.'; return; }
+
+        const hojeStr = new Date().toDateString();
+        const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
+        const ontemStr = ontem.toDateString();
+
+        const gruposTempo = {
+            '📅 Hoje': [],
+            '📅 Ontem': [],
+            '📁 Anteriores': []
+        };
+
+        eventos.slice(0,30).forEach(ev => {
+            const dt = new Date(ev.data).toDateString();
+            if (dt === hojeStr) gruposTempo['📅 Hoje'].push(ev);
+            else if (dt === ontemStr) gruposTempo['📅 Ontem'].push(ev);
+            else gruposTempo['📁 Anteriores'].push(ev);
         });
+
+        for (const [rotulo, itens] of Object.entries(gruposTempo)) {
+            if (!itens.length) continue;
+            const containerTempo = document.createElement('details');
+            containerTempo.className = 'historico-pasta';
+            containerTempo.open = (rotulo === '📅 Hoje');
+            const summaryTempo = document.createElement('summary');
+            summaryTempo.style.fontWeight = '700';
+            summaryTempo.style.color = '#38bdf8';
+            summaryTempo.textContent = `${rotulo} (${itens.length})`;
+            containerTempo.append(summaryTempo);
+
+            itens.forEach(ev => {
+                const grupo=document.createElement('details');grupo.className='historico-pasta';
+                const summary=document.createElement('summary');
+                const cards=ev.lote?indicesDoLote(ev.lote).map(i=>flashcards[i]):[];
+                const nome=ev.lote?`${cards.length} ${cards.length===1?'card importado':'cards importados'}`:String(ev.filtro||ev.nome).replace(/^🔍\s*/,'');
+                summary.textContent=`📁 ${nome}`;summary.title=new Date(ev.data).toLocaleString('pt-BR');grupo.append(summary);
+                const meta=document.createElement('small');meta.textContent=new Date(ev.data).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});grupo.append(meta);
+                const b=document.createElement('button');b.type='button';b.textContent=ev.lote?'▶ Estudar este lote':'🔍 Abrir esta seleção';
+                b.onclick=()=>ev.lote?iniciarNovosCards(ev.lote):ev.path?aplicarFiltroPorCaminho(ev.path):aplicarFiltro(ev.nivel,ev.filtro);grupo.append(b);
+                if(ev.lote){
+                    const raiz={filhos:new Map(),path:[]};
+                    cards.forEach(c=>{let no=raiz;caminhoLivre(c).forEach(parte=>{if(!no.filhos.has(parte))no.filhos.set(parte,{filhos:new Map(),path:[...no.path,parte]});no=no.filhos.get(parte);});});
+                    const mostrar=(no,container)=>no.filhos.forEach((filho,nome)=>{
+                        const pasta=document.createElement('details');pasta.className='historico-pasta';const titulo=document.createElement('summary');titulo.textContent=`📂 ${nome}`;pasta.append(titulo);
+                        const abrir=document.createElement('button');abrir.type='button';abrir.textContent='🔍 Estudar pasta';abrir.onclick=()=>aplicarFiltroPorCaminho(filho.path.join('|'));pasta.append(abrir);mostrar(filho,pasta);container.append(pasta);
+                    });mostrar(raiz,grupo);
+                }
+                containerTempo.append(grupo);
+            });
+            lista.append(containerTempo);
+        }
     }
     function registrar(ev) {
         const identidade=e=>e.lote?'lote:'+e.lote:e.path?'pasta:'+e.path:'filtro:'+e.nivel+':'+e.filtro;

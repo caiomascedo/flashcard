@@ -1915,6 +1915,7 @@
                 <h1 id="tituloPrincipal">📜 Flashcards</h1>
                 <div class="header-actions">
                     <button type="button" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 700; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer;" onclick="window.CalendarioInteligente?.abrir()">📅 Calendário</button>
+                    <button type="button" style="background: #059669; color: #fff; font-weight: 600; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;" onclick="filtrarCardsDoCaderno()" title="Filtra apenas os flashcards originados do Caderno de Erros">📕 Cards do Caderno</button>
                     <button type="button" onclick="abrirCadernoIntegrado()">📓 Caderno completo</button>
                     <button id="modoFocoBtn" onclick="alternarModoFoco()" aria-pressed="false">🎯 Modo foco</button>
                     <details id="menuFlashcard">
@@ -2013,6 +2014,7 @@
                     <button id="copiarCardBtn" onclick="copiarCardAtualLimpo()">📋 Copiar</button>
                     <button id="cadernoCardBtn" onclick="enviarCardAoCaderno()" title="Atalho: C">📓 Anotar no Caderno (C)</button>
                     <button class="delete-card" onclick="apagarCardAtual()">🗑️ Card</button>
+                    <button class="filtro-btn limpar" onclick="limparMarcacoesDoFiltro()" id="limparMarcacoesBtn" style="display:none;background:#f59e0b;color:#111827;font-weight:600;" title="Limpa acertos e erros apenas dos cards deste filtro">🧹 Limpar acertos/erros do filtro</button>
                     <button class="filtro-btn limpar" onclick="limparFiltro()" id="limparFiltroBtn" style="display:none;">✕ Filtro</button>
                 </div>
 
@@ -3136,6 +3138,8 @@
                 filtroNome.textContent = `${emojis[nivel] || '📂'} ${nome} (${indicesFiltrados.length} cards)`;
                 filtroInfo.style.display = 'inline';
                 limparFiltroBtn.style.display = 'inline-block';
+                const btnLimparMarc = document.getElementById('limparMarcacoesBtn');
+                if (btnLimparMarc) btnLimparMarc.style.display = 'inline-block';
                 modoBadgeEl.classList.add('filtro');
                 modoBadgeEl.textContent = `🔍 FILTRO: ${nome} (${indicesFiltrados.length} cards)`;
 
@@ -3152,11 +3156,31 @@
             }
         }
 
+        function limparMarcacoesDoFiltro() {
+            if (!indicesFiltrados || !indicesFiltrados.length) {
+                showToast('Nenhum card filtrado.');
+                return;
+            }
+            indicesFiltrados.forEach(idx => {
+                statusCard[idx] = 'nao';
+                respondido[idx] = false;
+            });
+            filaErros = filaErros.filter(idx => !indicesFiltrados.includes(idx));
+            revisaoIndices = revisaoIndices.filter(idx => !indicesFiltrados.includes(idx));
+            acertos = statusCard.filter(s => s === 'acertou').length;
+            erros = statusCard.filter(s => s === 'errou').length;
+            atualizarCard();
+            salvarEstado();
+            showToast(`🧹 Acertos e erros limpos para os ${indicesFiltrados.length} cards deste filtro!`);
+        }
+
         function limparFiltro() {
             filtroAtivo = null;
             indicesFiltrados = [];
             filtroInfo.style.display = 'none';
             limparFiltroBtn.style.display = 'none';
+            const btnLimparMarc = document.getElementById('limparMarcacoesBtn');
+            if (btnLimparMarc) btnLimparMarc.style.display = 'none';
             modoBadgeEl.classList.remove('filtro');
             modoBadgeEl.textContent = '';
             atualizarModoBadge();
@@ -3171,6 +3195,34 @@
                 return indicesFiltrados;
             }
             return Array.from({ length: total }, (_, i) => i);
+        }
+
+        function filtrarCardsDoCaderno() {
+            indicesFiltrados = [];
+            flashcards.forEach((card, index) => {
+                if (card.cadernoId || card.topico === 'Caderno' || card.topico === 'Caderno de Erros' || card.cadernoOrigemImportacao || card.origemImportacao) {
+                    indicesFiltrados.push(index);
+                }
+            });
+
+            if (indicesFiltrados.length > 0) {
+                filtroAtivo = { nivel: 'topico', nome: 'Caderno de Erros' };
+                filtroNome.textContent = `📕 Caderno de Erros (${indicesFiltrados.length} cards)`;
+                filtroInfo.style.display = 'inline';
+                limparFiltroBtn.style.display = 'inline-block';
+                const btnLimparMarc = document.getElementById('limparMarcacoesBtn');
+                if (btnLimparMarc) btnLimparMarc.style.display = 'inline-block';
+                modoBadgeEl.classList.add('filtro');
+                modoBadgeEl.textContent = `📕 CADERNO DE ERROS (${indicesFiltrados.length} cards)`;
+                indiceAtual = indicesFiltrados[0];
+                modoFilaErros = false;
+                modoRevisao = false;
+                atualizarCard();
+                salvarEstado();
+                showToast(`📕 Exibindo ${indicesFiltrados.length} cards do Caderno de Erros!`);
+            } else {
+                showToast('ℹ️ Nenhum card do caderno encontrado ainda. Crie flashcards no Caderno para que apareçam aqui.');
+            }
         }
 
         // ================================================================
