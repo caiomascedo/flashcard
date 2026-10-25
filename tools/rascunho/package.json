@@ -1,0 +1,13 @@
+{
+  "name": "flashcard-rascunho",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "build": "vite build && node copiar-fontes.mjs" },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": { "vite": "6.4.1" }
+}

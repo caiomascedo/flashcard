@@ -1,0 +1,26 @@
+#rascunhoFlashcard:not([open]) { display: none !important; }
+#rascunhoFlashcard[open] {
+  position: fixed; inset: 0; margin: auto; padding: 0; border: 1px solid #46857d;
+  border-radius: 12px; width: min(1200px, 98vw); height: 96dvh;
+  max-width: 100vw; max-height: 100dvh; box-sizing: border-box;
+  display: flex; flex-direction: column; overflow: hidden; background: white;
+}
+#rascunhoFlashcard::backdrop { background: #020e18bb; }
+#rascunhoFlashcard header {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 0 0 auto;
+  background: #102925; color: #e3fff9; padding: 8px 12px;
+  font: 14px system-ui, sans-serif;
+}
+#rascunhoFlashcard header [role="status"] { flex: 1; font-size: 12px; }
+#rascunhoFlashcard header button {
+  margin-left: auto; border: 1px solid #66bbae; border-radius: 7px;
+  padding: 8px 12px; background: #193e37; color: #e3fff9; cursor: pointer;
+}
+#rascunhoFlashcard iframe { border: 0; width: 100%; flex: 1; min-height: 0; background: white; }
+body.rascunho-aberto { overflow: hidden; }
+@media (max-width: 600px) {
+  #rascunhoFlashcard[open] { width: 100%; height: 100dvh; border-radius: 0; border: 0; }
+  #rascunhoFlashcard header { padding-top: max(8px, env(safe-area-inset-top)); gap: 6px; }
+  #rascunhoFlashcard header strong { font-size: 13px; }
+  #rascunhoFlashcard header [role="status"] { font-size: 11px; }
+}
