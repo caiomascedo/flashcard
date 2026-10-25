@@ -5,6 +5,7 @@
     const status = document.getElementById('cadernoIntegradoStatus');
     const retry = document.getElementById('cadernoIntegradoRepetir');
     const expand = document.getElementById('cadernoIntegradoExpandir');
+    let calendarioPendente=false;
     let pronto = false;
     let carregando = false;
     let enviando = false;
@@ -40,7 +41,7 @@
                 card = porOrigem.get(source.origemImportacao);
             }
             if (!card) {
-                card = { tipo: 'flashcard', topico: 'Caderno', nivel: 'medio' };
+                card = { tipo: 'flashcard', topico: 'Caderno', nivel: 'medio',loteImportacao:'caderno:'+source.id,importadoEm:Date.parse(source.criadoEm)||Date.now() };
                 flashcards.push(card);
                 respondido.push(false);
                 statusCard.push('nao');
@@ -64,7 +65,8 @@
         if (!mudou) { ultimaVersaoCards = versao; return; }
         total = flashcards.length;
         if (filtroAtivo) {
-            if (filtroAtivo.tipo === 'lote') indicesFiltrados = flashcards.map((card, index) => card.loteImportacao === filtroAtivo.loteId && card.tipo !== 'questao' && !(card.alternativas?.length >= 2) && !String(card.pergunta || '').startsWith('📁 Pasta:') ? index : -1).filter(index => index >= 0);
+            if (filtroAtivo.tipo === 'lista') indicesFiltrados=indicesFiltrados.filter(i=>!!flashcards[i]);
+            else if (filtroAtivo.tipo === 'lote') indicesFiltrados = flashcards.map((card, index) => card.loteImportacao === filtroAtivo.loteId && card.tipo !== 'questao' && !(card.alternativas?.length >= 2) && !String(card.pergunta || '').startsWith('📁 Pasta:') ? index : -1).filter(index => index >= 0);
             else if (filtroAtivo.tipo === 'lista') indicesFiltrados = indicesFiltrados.filter(index=>!!flashcards[index]);
             else if (filtroAtivo.path) indicesFiltrados = getIndicesDaPasta(filtroAtivo.path);
             else {
@@ -80,6 +82,7 @@
         if (salvarEstado()) ultimaVersaoCards = versao;
         atualizarCard();
         renderizarArvore();
+        window.recuperarHistoricoLotes?.();
     }
     function definirExpandido(expanded) {
         dialog.classList.toggle('caderno-maximizado', expanded);
@@ -100,7 +103,7 @@
         status.textContent = 'Carregando anotações e sincronizando sua conta…';
         clearTimeout(timeout);
         timeout = setTimeout(() => falha('O caderno demorou para carregar. Tente novamente.'), 30000);
-        frame.src = new URL('caderno.html?embed=flashcard&v=12', location.href).href;
+        frame.src = new URL('caderno.html?embed=flashcard&v=13', location.href).href;
     }
     async function enviarPendentes() {
         if (!pronto || enviando) return;
@@ -114,6 +117,7 @@
                 await frame.contentWindow.CadernoIntegrado.abrirAssunto(assuntoPendente);
                 assuntoPendente = null;
             }
+            if(calendarioPendente&&frame.contentWindow.abrirCalendarioRevisoes){frame.contentWindow.abrirCalendarioRevisoes();calendarioPendente=false;}
             sincronizarCards();
             status.textContent = '';
         } catch (error) {
@@ -127,6 +131,7 @@
         if (!carregando) carregar();
         else enviarPendentes();
     };
+    window.abrirCalendarioCaderno=()=>{calendarioPendente=true;window.abrirCadernoIntegrado();};
     window.abrirCadernoPorAssunto = function(assunto) {
         assuntoPendente = assunto;
         window.abrirCadernoIntegrado();
@@ -162,6 +167,12 @@
     expand.onclick = () => definirExpandido(!dialog.classList.contains('caderno-maximizado'));
     window.addEventListener('message', event => {
         if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+        if(event.data?.tipo==='caderno:estudar-assunto'){
+            sincronizarCards();const ids=new Set(event.data.ids||[]);const indices=flashcards.map((c,i)=>ids.has(String(c.cadernoId))?i:-1).filter(i=>i>=0);
+            if(!indices.length){status.textContent='Envie os cards deste assunto ao Flashcard antes de estudar por aqui.';return;}
+            filtroAtivo={tipo:'lista',nome:'Cards do caderno por assunto'};indicesFiltrados=indices;modoFilaErros=false;modoRevisao=false;indiceAtual=indices[0];atualizarCard();salvarEstado();dialog.close();return;
+        }
+
         if (event.data?.tipo === 'caderno:pronto') {
             clearTimeout(timeout);
             pronto = true;

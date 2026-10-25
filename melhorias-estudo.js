@@ -16,7 +16,10 @@
     function desenhar() {
         const lista=painel.querySelector('div');lista.replaceChildren();
         if(!eventos.length)lista.textContent='As próximas importações e lupas aparecerão aqui.';
-        eventos.slice(0,20).forEach(ev=>{
+        const dias=new Map();const hoje=new Date();hoje.setHours(0,0,0,0);const ontem=new Date(hoje);ontem.setDate(ontem.getDate()-1);
+        eventos.slice(0,40).forEach(ev=>{
+            const data=new Date(ev.data);data.setHours(0,0,0,0);const nomeDia=+data===+hoje?'Hoje':+data===+ontem?'Ontem':data.toLocaleDateString('pt-BR');
+            if(!dias.has(nomeDia)){const pasta=document.createElement('details'),titulo=document.createElement('summary');titulo.textContent='📅 '+nomeDia;pasta.append(titulo);lista.append(pasta);dias.set(nomeDia,pasta);}
             const grupo=document.createElement('details');grupo.className='historico-pasta';
             const summary=document.createElement('summary');
             const cards=ev.lote?indicesDoLote(ev.lote).map(i=>flashcards[i]):[];
@@ -33,7 +36,7 @@
                     const abrir=document.createElement('button');abrir.type='button';abrir.textContent='🔍 Estudar pasta';abrir.onclick=()=>aplicarFiltroPorCaminho(filho.path.join('|'));pasta.append(abrir);mostrar(filho,pasta);container.append(pasta);
                 });mostrar(raiz,grupo);
             }
-            lista.append(grupo);
+            dias.get(nomeDia).append(grupo);
         });
     }
     function registrar(ev) {
@@ -58,6 +61,7 @@
         try{localStorage.setItem(key,JSON.stringify(eventos));}catch{}
         desenhar();
     }
+    window.recuperarHistoricoLotes=recuperarLotesAnteriores;
     window.addEventListener('flashcard:pronto',recuperarLotesAnteriores,{once:true});
     function sinalizarPastas() {
         const lote=ultimoLoteImportado();if(!lote)return;
