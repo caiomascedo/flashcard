@@ -60,3 +60,24 @@ Chromium e WebKit, com telas de celular e computador:
 python -m playwright install chromium webkit
 python -m pytest -q tests/test_menu_paineis.py
 ```
+
+## Calendário de revisões
+
+O antigo cronograma é substituído pelo calendário mensal. Cards são separados por
+matéria e assunto; as páginas do caderno são lembradas no registro e após 1, 7 e 30
+dias. Há conclusão manual e conclusão automática ao responder todos os cards da
+atividade. As marcações integram os dados salvos do usuário, junto dos backups.
+O calendário principal dá acesso ao calendário do caderno.
+
+A cola aceita um cabeçalho `Q4221348 Português > Interpretação de Textos`, seguido
+da pergunta e da resposta separadas por uma linha em branco. Reutiliza pastas e a
+página local de hoje. O usuário confere o rascunho e decide se o novo card também
+será enviado ao Flashcard. O histórico organiza registros em Hoje, Ontem e datas.
+
+**Limpar marcações da seleção** pede confirmação e preserva os demais filtros.
+
+Verificação isolada (nuvem simulada, Chromium e WebKit):
+
+```sh
+python -m pytest -q tests/test_calendario.py
+```

@@ -372,8 +372,7 @@
         #btnRecolherFerramentas:focus-visible { outline:3px solid #16a34a; outline-offset:2px; }
         body.dark-mode #btnRecolherFerramentas { background:#334155; color:#e2e8f0; }
     </style>
-    <link rel="stylesheet" href="calendario-inteligente.css?v=1">
-    <script src="calendario-inteligente.js?v=1"></script>
+<link rel="stylesheet" href="calendario-revisoes.css?v=1">
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen pb-16">
 
@@ -497,7 +496,7 @@
     <input type="file" id="inputImportar" accept=".json" class="hidden">
 </div>
 
-<div id="modalFlashcard" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-5"><h3 class="text-lg font-bold text-green-700 mb-2">✏️ Flashcard</h3><input type="text" id="inputPergunta" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Pergunta"><textarea id="inputResposta" rows="3" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Resposta"></textarea><input type="text" id="inputTags" class="w-full bg-gray-100 rounded-xl p-2 mb-3 border" placeholder="Tags (separadas por vírgula)"><div class="mb-3"><label class="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer"><input type="checkbox" id="checkJogarParaFlashcard" checked style="width:16px;height:16px;"> <span>🎴 Jogar para os Flashcards também</span></label></div><div class="flex gap-2"><button id="modalCancelar" class="flex-1 bg-gray-300 py-2 rounded-xl">Cancelar</button><button id="modalSalvar" class="flex-1 bg-green-600 text-white py-2 rounded-xl">Salvar</button></div></div></div>
+<div id="modalFlashcard" class="fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-5"><h3 class="text-lg font-bold text-green-700 mb-2">✏️ Flashcard</h3><input type="text" id="inputPergunta" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Pergunta"><textarea id="inputResposta" rows="3" class="w-full bg-gray-100 rounded-xl p-2 mb-2 border" placeholder="Resposta"></textarea><input type="text" id="inputTags" class="w-full bg-gray-100 rounded-xl p-2 mb-3 border" placeholder="Tags (separadas por vírgula)"><div class="flex gap-2"><button id="modalCancelar" class="flex-1 bg-gray-300 py-2 rounded-xl">Cancelar</button><button id="modalSalvar" class="flex-1 bg-green-600 text-white py-2 rounded-xl">Salvar</button></div></div></div>
 <div id="modalConfirmacao" class="fixed inset-0 bg-black/70 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full p-5"><h3 class="text-lg font-bold text-red-600 mb-2">⚠️ Atenção!</h3><p class="text-sm mb-3">Digite <strong class="text-red-600">CONFIRMAR</strong> para limpar o caderno:</p><input type="text" id="confirmacaoInput" class="w-full bg-gray-100 rounded-xl p-2 mb-3 border confirm-input" placeholder="CONFIRMAR"><div class="flex gap-2"><button id="confirmacaoCancelar" class="flex-1 bg-gray-300 py-2 rounded-xl">Cancelar</button><button id="confirmacaoOk" class="flex-1 bg-red-600 text-white py-2 rounded-xl">Limpar</button></div></div></div>
 <div id="modalEstudo" class="fixed inset-0 bg-black/80 items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl max-w-md w-full max-h-[92vh] overflow-y-auto p-5 relative"><button id="fecharEstudo" class="absolute top-2 right-3 text-gray-500 text-xl">&times;</button><div id="estudoConteudo" class="min-h-[300px] flex flex-col"></div><button id="btnResponderVoz" class="mt-3 bg-purple-600 text-white py-2 rounded-xl text-sm w-full hidden">🎤 Responder por Voz</button></div></div>
 <div id="modalCronograma" class="fixed inset-0 bg-black/70 items-center justify-center z-50 p-4 overflow-y-auto"><div class="bg-white rounded-2xl max-w-2xl w-full p-5 max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-green-700">📅 Cronograma</h2><button id="fecharCronograma" class="text-gray-500 text-2xl">&times;</button></div><div id="listaTarefas" class="space-y-2 mb-4"></div><div class="border-t pt-4"><h3 class="font-semibold mb-2">➕ Nova Tarefa</h3><div class="flex flex-wrap gap-2"><input type="time" id="novaHora" class="bg-gray-100 rounded-xl p-2 border" value="08:00"><input type="text" id="novaDesc" placeholder="Descrição" class="flex-1 bg-gray-100 rounded-xl p-2 border"><select id="novoTipo" class="bg-gray-100 rounded-xl p-2 border"><option value="flashcard">📇 Flashcard</option><option value="questoes">✏️ Questões</option><option value="correcao">📝 Correção</option><option value="revisao">🔄 Revisão</option><option value="pausa">☕ Pausa</option></select><button id="btnAdicionarTarefa" class="bg-green-600 text-white px-4 py-2 rounded-xl">+</button></div></div></div></div>
@@ -651,14 +650,16 @@ function registrarAlteracaoLocal() {
     function abrirModal(id)  { document.getElementById(id).classList.add('ativo'); }
     function fecharModal(id) { document.getElementById(id).classList.remove('ativo'); }
 
+    function registrarDiaDeRevisao(card,data=new Date()){const d=new Date(data);const dia=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;dados.revisoesCalendario ||= {};dados.revisoesCalendario[dia+'|'+card.id]=true;}
     window.CadernoIntegrado = {
-        cards: () => dados.flashcards.map(card => {
+        registrarRevisao: (id,data,proxima)=>{const card=dados.flashcards.find(c=>String(c.id)===String(id));if(card){registrarDiaDeRevisao(card,data);card.ultima_revisao=data;card.proxima_revisao=proxima;salvarTudo();}},
+        cards: () => dados.flashcards.filter(card=>card.enviarFlashcard!==false).map(card => {
             const concurso = dados.concursos.find(c => c.id == card.concursoId);
             const materia = concurso?.materias?.find(m => m.id == card.materiaId);
             const assunto = materia?.assuntos?.find(a => a.id == card.assuntoId);
             return { id: String(card.id), origemImportacao: card.origemImportacao || '',
                 concurso: concurso?.nome || 'Sem concurso', materia: materia?.nome || 'Sem matéria',
-                assunto: assunto?.nome || 'Sem assunto', pergunta: card.pergunta, resposta: card.resposta,
+                assunto: assunto?.nome || 'Sem assunto', criadoEm:card.criadoEm||'', pergunta: card.pergunta, resposta: card.resposta,
                 dica: card.dica || '', tags: card.tags || [] };
         }),
         importar: async card => { if (!sincronizacaoInicialConcluida) throw Error('Aguarde a sincronização do caderno.'); salvarEditor(); await importarFlashcardRecebido(card); },
@@ -678,6 +679,23 @@ function registrarAlteracaoLocal() {
             navLevel = 'concursos';
             renderNav(); carregarEditor(); atualizarPreview(); atualizarStats(); atualizarEstatisticas(); atualizarProgresso(); atualizarPendencias();
         }
+    };
+    window.CalendarioFonte={context:'caderno',beforeRender:()=>{const cb=document.getElementById('responderPeloFlashcard');if(cb)cb.checked=dados.responderSomenteFlashcard!==false;},loadMarks:()=>dados.calendarioMarcacoes||{},saveMarks:marks=>{dados.calendarioMarcacoes=marks;salvarTudo();},attach(open){
+        document.getElementById('btnCronograma').onclick=open;document.getElementById('btnCronograma').title='Calendário de revisões';
+        const old=document.getElementById('modalCronograma');if(old)old.style.display='none';const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.id='responderPeloFlashcard';check.checked=dados.responderSomenteFlashcard!==false;label.append(check,document.createTextNode(' Responder os cards pelo Flashcard'));document.getElementById('calendarioRevisoes').querySelector('nav').after(label);check.onchange=()=>{dados.responderSomenteFlashcard=check.checked;salvarTudo();};
+        const reminder=document.createElement('div');reminder.id='avisoCardsAssunto';document.getElementById('editor').before(reminder);
+        const refresh=()=>{reminder.replaceChildren();const cards=dados.flashcards.filter(f=>f.concursoId==concursoAtualId&&f.materiaId==materiaAtualId&&f.assuntoId==assuntoAtualId);if(!cards.length)return;reminder.append(document.createTextNode('🎴 '+cards.length+' cards deste assunto para praticar.'));const button=document.createElement('button');button.type='button';button.textContent='Responder cards';button.onclick=()=>{window.CalendarioFonte.open({cards});};reminder.append(button);};
+        window.addEventListener('caderno:alterado',refresh);window.addEventListener('caderno:pronto-local',refresh);new MutationObserver(refresh).observe(document.getElementById('nomeAssunto'),{childList:true});refresh();
+    },items(day,today,dateKey){const tasks=[];
+        for(const c of dados.concursos)for(const m of c.materias||[])for(const a of m.assuntos||[]){
+            const group=c.nome+' › '+m.nome,cards=dados.flashcards.filter(f=>f.concursoId==c.id&&f.materiaId==m.id&&f.assuntoId==a.id),due=cards.filter(f=>{const date=dateKey(f.proxima_revisao);return date===day||(day===today&&date<today)||dateKey(f.ultima_revisao)===day||dados.revisoesCalendario?.[day+'|'+f.id];});
+            if(due.length)tasks.push({id:'cards:'+c.id+':'+m.id+':'+a.id,group,title:a.nome+' · '+due.length+' cards',cards:due,done:due.every(f=>dateKey(f.ultima_revisao)===day||dados.revisoesCalendario?.[day+'|'+f.id]),actionLabel:'Responder cards'});
+            for(const pg of a.paginas||[]){const created=new Date(pg.data);if(Number.isNaN(+created))continue;const dates=[0,1,7,30].map(n=>{const d=new Date(created);d.setDate(d.getDate()+n);return dateKey(d);});if(dates.includes(day))tasks.push({id:'pagina:'+c.id+':'+m.id+':'+a.id+':'+pg.id,group,title:a.nome+' · '+pg.titulo,actionLabel:'Revisar caderno',c,m,a,pg});}
+        }return tasks;
+    },open(task){window.dispatchEvent(new Event('caderno:fechar-paineis'));if(task.cards){
+        if(integrado&&dados.responderSomenteFlashcard!==false){if(task.cards.some(c=>c.enviarFlashcard===false)){if(!confirm('Enviar os cards deste assunto ao Flashcard para responder por lá?'))return;task.cards.forEach(c=>c.enviarFlashcard=true);salvarTudo();}window.parent.postMessage({tipo:'caderno:estudar-assunto',ids:task.cards.map(c=>String(c.id))},location.origin);return;}
+        studyQueue=task.cards.slice();studyIdx=0;studySessionTotal=studyQueue.length;estudoModalAberto=true;abrirModal('modalEstudo');mostrarCard();
+    }else{salvarEditor();concursoAtualId=task.c.id;materiaAtualId=task.m.id;assuntoAtualId=task.a.id;navLevel='paginas';abrirPagina(task.pg.id);atualizarPreview();}}
     };
     let dados = JSON.parse(localStorage.getItem('dados_concursos')) || { concursos: [], flashcards: [] };
     let concursoAtualId = null, materiaAtualId = null, assuntoAtualId = null;
@@ -1403,43 +1421,6 @@ function registrarAlteracaoLocal() {
     window.atualizarHistoricoCaderno = function() {
         const lista=document.getElementById('historicoCadernoLista');if(!lista)return;
         lista.replaceChildren();
-
-        const hojeStr = new Date().toDateString();
-        const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
-        const ontemStr = ontem.toDateString();
-
-        // Seção rápida de páginas criadas/editadas Hoje e Ontem
-        const paginasRecentes = { '📅 Hoje': [], '📅 Ontem': [] };
-        for (const c of dados.concursos) for (const m of c.materias || []) for (const a of m.assuntos || []) {
-            for (const pg of (a.paginas || [])) {
-                const dt = new Date(pg.data).toDateString();
-                if (dt === hojeStr) paginasRecentes['📅 Hoje'].push({ c, m, a, pg });
-                else if (dt === ontemStr) paginasRecentes['📅 Ontem'].push({ c, m, a, pg });
-            }
-        }
-        for (const [rotulo, itens] of Object.entries(paginasRecentes)) {
-            if (!itens.length) continue;
-            const det = document.createElement('details');
-            det.className = 'historico-pasta';
-            det.open = (rotulo === '📅 Hoje');
-            const sum = document.createElement('summary');
-            sum.style.fontWeight = '700'; sum.style.color = '#15803d';
-            sum.textContent = `${rotulo} (${itens.length} anotações)`;
-            det.append(sum);
-            itens.forEach(({ c, m, a, pg }) => {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.textContent = `📓 [${m.nome}] ${pg.titulo}`;
-                b.onclick = () => {
-                    salvarEditor(); concursoAtualId = c.id; materiaAtualId = m.id; assuntoAtualId = a.id;
-                    navLevel = 'paginas'; abrirPagina(pg.id); atualizarPreview();
-                    window.dispatchEvent(new Event('caderno:fechar-paineis'));
-                };
-                det.append(b);
-            });
-            lista.append(det);
-        }
-
         for (const c of dados.concursos) for (const m of c.materias || []) {
             const materia=document.createElement('details');
             const cab=document.createElement('summary');cab.textContent=c.nome+' › '+m.nome;materia.append(cab);
@@ -1450,19 +1431,22 @@ function registrarAlteracaoLocal() {
                 titulo.textContent=a.nome+' · '+cards.length+' cards';assunto.append(titulo);
                 if(cards.length){
                     const estudar=document.createElement('button');estudar.type='button';estudar.textContent='▶ Responder cards deste assunto';
-                    estudar.onclick=()=>{studyQueue=cards.slice();studyIdx=0;studySessionTotal=cards.length;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};assunto.append(estudar);
+                    estudar.onclick=()=>{window.CalendarioFonte.open({cards:cards});};assunto.append(estudar);
                     const pendentes=cards.filter(f=>new Date(f.proxima_revisao)<=new Date());
-                    if(pendentes.length){const revisar=document.createElement('button');revisar.type='button';revisar.textContent='🔄 Revisar '+pendentes.length+' pendentes';revisar.onclick=()=>{studyQueue=pendentes.slice();studyIdx=0;studySessionTotal=pendentes.length;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};assunto.append(revisar);}
+                    if(pendentes.length){const revisar=document.createElement('button');revisar.type='button';revisar.textContent='🔄 Revisar '+pendentes.length+' pendentes';revisar.onclick=()=>{window.CalendarioFonte.open({cards:pendentes});};assunto.append(revisar);}
                 }
                 if(cards.length){
                     const perguntas=document.createElement('details'),cab=document.createElement('summary');cab.textContent='🎴 Ver perguntas';perguntas.append(cab);
                     perguntas.addEventListener('toggle',()=>{if(!perguntas.open || perguntas.dataset.carregado)return;perguntas.dataset.carregado='true';
-                    for(const card of cards){const responder=document.createElement('button');responder.type='button';responder.textContent=card.pergunta;responder.onclick=()=>{studyQueue=[card];studyIdx=0;studySessionTotal=1;estudoModalAberto=true;window.dispatchEvent(new Event('caderno:fechar-paineis'));abrirModal('modalEstudo');mostrarCard();};perguntas.append(responder);}
+                    const gruposDias=new Map();const diaHoje=new Date();diaHoje.setHours(0,0,0,0);const diaOntem=new Date(diaHoje);diaOntem.setDate(diaOntem.getDate()-1);
+                    for(const card of [...cards].sort((x,y)=>(Date.parse(y.criadoEm)||Number(y.id)||0)-(Date.parse(x.criadoEm)||Number(x.id)||0))){const data=card.criadoEm||(Number(card.id)>1e12?Number(card.id):null);const dia=data?new Date(data):null;if(dia)dia.setHours(0,0,0,0);const nome=!dia?'Anteriores':+dia===+diaHoje?'Hoje':+dia===+diaOntem?'Ontem':dia.toLocaleDateString('pt-BR');if(!gruposDias.has(nome)){const pasta=document.createElement('details'),titulo=document.createElement('summary');titulo.textContent='📅 '+nome;pasta.append(titulo);perguntas.append(pasta);gruposDias.set(nome,pasta);}const responder=document.createElement('button');responder.type='button';responder.textContent=card.pergunta;responder.onclick=()=>{window.CalendarioFonte.open({cards:[card]});};gruposDias.get(nome).append(responder);}
                     });
                     assunto.append(perguntas);
                 }
+                const pastasDias=new Map();const hoje=new Date();hoje.setHours(0,0,0,0);const ontem=new Date(hoje);ontem.setDate(ontem.getDate()-1);
                 for(const pg of [...(a.paginas||[])].sort((x,y)=>new Date(y.data)-new Date(x.data))){
-                    const abrir=document.createElement('button');abrir.type='button';abrir.textContent='📓 '+pg.titulo;abrir.onclick=()=>{salvarEditor();concursoAtualId=c.id;materiaAtualId=m.id;assuntoAtualId=a.id;navLevel='paginas';abrirPagina(pg.id);atualizarPreview();window.dispatchEvent(new Event('caderno:fechar-paineis'));};assunto.append(abrir);
+                    const dia=new Date(pg.data);dia.setHours(0,0,0,0);const nome=+dia===+hoje?'Hoje':+dia===+ontem?'Ontem':dia.toLocaleDateString('pt-BR');if(!pastasDias.has(nome)){const pasta=document.createElement('details'),titulo=document.createElement('summary');titulo.textContent='📅 '+nome;pasta.append(titulo);assunto.append(pasta);pastasDias.set(nome,pasta);}
+                    const abrir=document.createElement('button');abrir.type='button';abrir.textContent='📓 '+pg.titulo;abrir.onclick=()=>{salvarEditor();concursoAtualId=c.id;materiaAtualId=m.id;assuntoAtualId=a.id;navLevel='paginas';abrirPagina(pg.id);atualizarPreview();window.dispatchEvent(new Event('caderno:fechar-paineis'));};pastasDias.get(nome).append(abrir);
                 }
                 materia.append(assunto);
             }
@@ -1470,6 +1454,7 @@ function registrarAlteracaoLocal() {
         }
         if(!lista.children.length)lista.textContent='Nenhum caderno ou card cadastrado.';
     };
+    window.CadernoIntegrado.criarPaginaHoje=()=>{const {assunto}=contextoAtualDoCaderno();if(!assunto)return;const hoje=new Date().toLocaleDateString('pt-BR');const pagina=(assunto.paginas||[]).find(p=>new Date(p.data).toLocaleDateString('pt-BR')===hoje);if(pagina){paginaAtualId=pagina.id;assunto.paginaAtualId=pagina.id;carregarEditor();salvarTudo();}else document.getElementById('btnPaginaHoje').click();};
     window.extrairDadosQuestaoQC = function(texto) {
         const raw = String(texto || '').trim();
         if (!raw) return null;
@@ -1508,171 +1493,18 @@ function registrarAlteracaoLocal() {
         return null;
     };
 
-    window.processarQuestaoQCCaderno = function(dadosQC) {
-        if (!sincronizacaoInicialConcluida && (!dados.concursos || dados.concursos.length === 0)) {
-            toast('Aguarde a sincronização inicial antes de cadastrar.');
-            return false;
+    window.prepararColaCaderno=function(texto){
+        let raw=String(texto).replace(/\r\n?/g,'\n').trim();
+        const qc=window.extrairDadosQuestaoQC(raw);const first=qc ? qc.materia+' > '+[qc.assunto,qc.topico].filter(Boolean).join(', ') : raw.split('\n')[0],code=(qc?.codigoQuestao||first).match(/\bQ\d+\b/i);
+        if(first.includes('>')||first.includes('›')){
+            const parts=first.replace(/Q\d+/i,'').split(/[>›]/).map(x=>x.trim().replace(/^[,;\s]+|[,;\s]+$/g,''));
+            const corrigir=v=>v.replace(/portugu[eêé]s/ig,'Português').replace(/interpretac[aã]o|interpretag[aã]o/ig,'Interpretação').replace(/nocdes|noc[oõ]es/ig,'Noções').replace(/compreensao/ig,'Compreensão');const materia=corrigir(parts.shift()||''),assunto=corrigir(parts.join(' › '));
+            if(materia&&assunto){try{window.prepararEscritaCaderno({concurso:contextoAtualDoCaderno().concurso?.nome||'PMPI',materia,assunto});}catch(error){toast(error.message);return false;}raw=qc ? qc.resto : raw.slice(first.length).trim();window.CadernoIntegrado.criarPaginaHoje?.();}
         }
-        dados.concursos ||= [];
-        const normalizar = CadernoAssuntoPMPI.normalizar;
-
-        // 1. Concurso (atual, ou PMPI, ou primeiro disponível)
-        let concurso = dados.concursos.find(c => c.id == concursoAtualId)
-            || dados.concursos.find(c => normalizar(c.nome) === 'pmpi' || /pm\s*pi/i.test(c.nome))
-            || dados.concursos[0];
-        const idGen = CadernoAssuntoPMPI.geradorId(dados);
-        if (!concurso) {
-            concurso = { id: idGen(), nome: 'PMPI', materias: [] };
-            dados.concursos.push(concurso);
-        }
-
-        // 2. Matéria (procura existente ou cria nova)
-        concurso.materias ||= [];
-        const normMateria = normalizar(dadosQC.materia);
-        const chaveMateria = CadernoAssuntoPMPI.materiaChave(dadosQC.materia);
-        let materia = concurso.materias.find(m => 
-            normalizar(m.nome) === normMateria || 
-            CadernoAssuntoPMPI.materiaChave(m.nome) === chaveMateria
-        );
-        if (!materia) {
-            const nomeFormatado = dadosQC.materia.trim().charAt(0).toUpperCase() + dadosQC.materia.trim().slice(1);
-            materia = { id: idGen(), nome: nomeFormatado, assuntos: [] };
-            concurso.materias.push(materia);
-        }
-
-        // 3. Assunto (procura existente ou cria novo)
-        materia.assuntos ||= [];
-        const normAssunto = normalizar(dadosQC.assunto);
-        const chaveAssunto = CadernoAssuntoPMPI.assuntoChave(dadosQC.assunto);
-        let assunto = materia.assuntos.find(a => 
-            normalizar(a.nome) === normAssunto || 
-            CadernoAssuntoPMPI.assuntoChave(a.nome) === chaveAssunto ||
-            (a.unificado && a.unificado.chave === chaveAssunto)
-        );
-        if (!assunto) {
-            const nomeFormatado = dadosQC.assunto.trim().charAt(0).toUpperCase() + dadosQC.assunto.trim().slice(1);
-            assunto = { id: idGen(), nome: nomeFormatado, paginas: [] };
-            materia.assuntos.push(assunto);
-        }
-
-        salvarEditor();
-
-        // 4. Cria página para a DATA DE HOJE automática com a estrutura de erros
-        assunto.paginas ||= [];
-        const agora = new Date();
-        const hojeFormatada = agora.toLocaleDateString('pt-BR');
-        const tit = dadosQC.codigoQuestao ? `${dadosQC.codigoQuestao} · ${hojeFormatada}` : `Erros · ${hojeFormatada} · Pág. ${assunto.paginas.length + 1}`;
-        const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        const qcLink = dadosQC.codigoQuestao ? `https://www.qconcursos.com/questoes-de-concursos/questoes/${dadosQC.codigoQuestao.replace(/^Q/i, '')}` : '';
-
-        let html = `<h2>${dadosQC.codigoQuestao ? esc(dadosQC.codigoQuestao) + ' · ' : ''}${esc(materia.nome)} › ${esc(assunto.nome)}</h2>`;
-        if (dadosQC.topico) {
-            html += `<p style="color:#64748b; font-size:14px; margin-bottom:4px;"><strong>Tópico:</strong> ${esc(dadosQC.topico)}</p>`;
-        }
-        html += `<p style="font-size:13px; color:#475569; margin-bottom:8px;"><strong>Data de Estudo:</strong> 📅 ${hojeFormatada}</p>`;
-        if (qcLink) {
-            html += `<p style="font-size:13px;"><a href="${qcLink}" target="_blank" rel="noopener noreferrer" style="color:#166534; font-weight:600; text-decoration:underline;">🔗 Abrir ${esc(dadosQC.codigoQuestao)} no QConcursos</a></p>`;
-        }
-        html += `<hr style="margin: 12px 0; border:0; border-top: 1px solid #cbd5e1;">`;
-
-        if (dadosQC.resto) {
-            html += `<div style="background:#f8fafc; border-left:4px solid #3b82f6; padding:10px 14px; border-radius:6px; margin-bottom:14px; font-size:13px; line-height:1.5; color:#1e293b;"><strong>Enunciado / Trecho copiado:</strong><br>${esc(dadosQC.resto).replace(/\n/g, '<br>')}</div>`;
-        }
-
-        html += `<h3 style="color:#dc2626; margin-top:14px;">❌ O que errei / Por que errei:</h3>`;
-        html += `<p style="color:#334155;"><em>(Escreva aqui o motivo do erro, o distrator marcado, a pegadinha...)</em></p><p><br></p>`;
-        html += `<h3 style="color:#16a34a; margin-top:14px;">💡 Regra correta / Como não errar mais:</h3>`;
-        html += `<p style="color:#334155;"></p><p><br></p>`;
-
-        const novaPagina = {
-            id: idGen(),
-            titulo: tit,
-            data: agora.toISOString(),
-            cadernoHTML: html
-        };
-        assunto.paginas.push(novaPagina);
-        assunto.paginaAtualId = novaPagina.id;
-
-        concursoAtualId = concurso.id;
-        materiaAtualId = materia.id;
-        assuntoAtualId = assunto.id;
-        paginaAtualId = novaPagina.id;
-        concurso.materiaAtualId = materia.id;
-        materia.assuntoAtualId = assunto.id;
-        navLevel = 'paginas';
-
-        salvarTudo();
-        renderNav();
-        carregarEditor();
-        atualizarCabecalho();
-        atualizarAtalhosDoAssunto();
-        window.atualizarHistoricoCaderno?.();
-
-        const ed = document.getElementById('editor');
-        if (ed) {
-            ed.focus();
-            try {
-                const range = document.createRange();
-                const sel = window.getSelection();
-                range.selectNodeContents(ed);
-                range.collapse(false);
-                sel.removeAllRanges();
-                sel.addRange(range);
-            } catch(e) {}
-        }
-
-        toast(`📕 Assunto "${assunto.nome}" e página de hoje (${tit}) criados!`);
-        return true;
-    };
-
-    window.prepararColaCaderno = function(texto, forcarFlashcard = false) {
-        const limpo = String(texto || '').trim();
-        if (!limpo) {
-            toast('Cole algum texto para processar.');
-            return false;
-        }
-
-        const dadosQC = window.extrairDadosQuestaoQC(limpo);
-
-        // Se for questão do QConcursos e não forçar modo flashcard exclusivo
-        if (dadosQC && !forcarFlashcard) {
-            const sucesso = window.processarQuestaoQCCaderno(dadosQC);
-            if (sucesso && dadosQC.resto && /\n[\t ]*\r?\n/.test(dadosQC.resto)) {
-                setTimeout(() => {
-                    const partes = dadosQC.resto.split(/\n[\t ]*\n+/);
-                    editandoFlashcardId = null;
-                    document.getElementById('inputPergunta').value = partes.shift() || '';
-                    document.getElementById('inputResposta').value = partes.join('\n\n');
-                    document.getElementById('inputTags').value = `${dadosQC.codigoQuestao || ''}, ${dadosQC.materia}, ${dadosQC.assunto}, erro`.replace(/^, /, '');
-                    abrirModal('modalFlashcard');
-                    toast('🎴 Flashcard pronto para revisão!');
-                }, 300);
-            }
-            return sucesso;
-        }
-
-        // Se for cadastrar flashcard
-        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) {
-            const c = dados.concursos[0];
-            const m = c?.materias?.[0];
-            const a = m?.assuntos?.[0];
-            if (c && m && a) {
-                concursoAtualId = c.id;
-                materiaAtualId = m.id;
-                assuntoAtualId = a.id;
-            } else {
-                toast('Selecione ou crie um assunto antes de cadastrar flashcard.');
-                return false;
-            }
-        }
-
-        const partes = limpo.replace(/\r\n?/g, '\n').split(/\n[\t ]*\n+/);
-        editandoFlashcardId = null;
-        document.getElementById('inputPergunta').value = partes.shift() || '';
-        document.getElementById('inputResposta').value = partes.join('\n\n');
-        document.getElementById('inputTags').value = dadosQC ? `${dadosQC.codigoQuestao || ''}, ${dadosQC.materia}, ${dadosQC.assunto}, erro`.replace(/^, /, '') : 'erro, revisão, PMPI';
-        abrirModal('modalFlashcard');
-        return true;
+        if(!concursoAtualId||!materiaAtualId||!assuntoAtualId){toast('Informe Matéria > Assunto na primeira linha para preparar o caderno.');return false;}
+        const parts=raw.split(/\n[\t ]*\n+/);editandoFlashcardId=null;
+        document.getElementById('inputPergunta').value=parts.shift()||'';document.getElementById('inputResposta').value=parts.join('\n\n');
+        document.getElementById('inputTags').value=code?code[0]:'';abrirModal('modalFlashcard');return true;
     };
 
     // ==================== NAVEGAÇÃO EM PASTAS (Concursos > Matérias > Assuntos > Páginas) ====================
@@ -2001,6 +1833,7 @@ function registrarAlteracaoLocal() {
     window.abrirNoSiteFlashcards = function(id) {
         const card = dados.flashcards.find(f => f.id == id);
         if (integrado && card) {
+            if(card.enviarFlashcard===false){if(!confirm('Enviar este card ao Flashcard para responder por lá?'))return;card.enviarFlashcard=true;salvarTudo();}
             salvarEditor();
             window.parent.postMessage({ tipo: 'caderno:abrir-original', idImportacao: card.origemImportacao, cadernoId: String(card.id) }, location.origin);
             return;
@@ -2024,62 +1857,7 @@ function registrarAlteracaoLocal() {
     window.editarFlashcard = function(id) { const card = dados.flashcards.find(f=>f.id==id); if(!card) return; editandoFlashcardId = id; document.getElementById('inputPergunta').value = card.pergunta; document.getElementById('inputResposta').value = card.resposta; document.getElementById('inputTags').value = (card.tags || []).join(', '); abrirModal('modalFlashcard'); };
     window.excluirFlashcard = function(id) { if(confirm("Excluir?")) { dados.flashcards = dados.flashcards.filter(f=>f.id!=id); salvarTudo(); atualizarPreview(); atualizarStats(); toast("🗑️ Excluído"); } };
     function criarFlashcard() { if(!concursoAtualId || !materiaAtualId || !assuntoAtualId){ alert("Selecione concurso, matéria e assunto"); return; } const sel = window.getSelection().toString().trim(); let pergunta = sel, resposta = ""; if(sel.includes("::")) { let partes = sel.split("::"); pergunta = partes[0].trim(); resposta = partes.slice(1).join("::").trim(); } editandoFlashcardId = null; document.getElementById('inputPergunta').value = pergunta; document.getElementById('inputResposta').value = resposta; document.getElementById('inputTags').value = ''; abrirModal('modalFlashcard'); setTimeout(() => document.getElementById(pergunta ? 'inputResposta' : 'inputPergunta').focus(), 50); }
-    function salvarFlashcard() {
-        const p = document.getElementById('inputPergunta').value.trim();
-        const r = document.getElementById('inputResposta').value.trim();
-        const tagsStr = document.getElementById('inputTags').value.trim();
-        const tags = tagsStr ? tagsStr.split(',').map(t=>t.trim()).filter(t=>t) : [];
-        const jogarParaFlashcard = document.getElementById('checkJogarParaFlashcard')?.checked ?? true;
-        if(!p || !r){ alert("Preencha"); return; }
-        if(editandoFlashcardId) {
-            const card = dados.flashcards.find(f=>f.id==editandoFlashcardId);
-            if(card) {
-                card.pergunta = p; card.resposta = r; card.tags = tags;
-                salvarTudo(); atualizarPreview(); toast("✅ Atualizado!");
-            }
-        } else {
-            const novoId = Date.now();
-            dados.flashcards.push({ id: novoId, concursoId: concursoAtualId, materiaId: materiaAtualId, assuntoId: assuntoAtualId, pergunta: p, resposta: r, tags: tags, intervalo: 0, repeticoes: 0, facilidade: 2.5, proxima_revisao: new Date().toISOString() });
-            salvarTudo(); atualizarPreview(); atualizarStats();
-
-            // Salvar automaticamente nos Flashcards se solicitado
-            if (jogarParaFlashcard) {
-                try {
-                    const concurso = dados.concursos.find(c => c.id == concursoAtualId);
-                    const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
-                    const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
-                    let estadoFlash = null;
-                    try { estadoFlash = JSON.parse(localStorage.getItem('flashcards_estado') || 'null'); } catch(e){}
-                    if (!estadoFlash || !Array.isArray(estadoFlash.flashcards)) {
-                        estadoFlash = { flashcards: [], statusCard: [], respondido: [], total: 0 };
-                    }
-                    if (estadoFlash && Array.isArray(estadoFlash.flashcards)) {
-                        estadoFlash.flashcards.push({
-                            pergunta: p,
-                            resposta: r,
-                            tags: tags,
-                            concurso: concurso?.nome || 'PMPI',
-                            materia: materia?.nome || 'Geral',
-                            assunto: assunto?.nome || 'Caderno',
-                            topico: 'Caderno de Erros',
-                            nivel: 'medio',
-                            importadoEm: novoId
-                        });
-                        estadoFlash.total = estadoFlash.flashcards.length;
-                        estadoFlash.statusCard = estadoFlash.statusCard || [];
-                        estadoFlash.statusCard.push('nao');
-                        estadoFlash.respondido = estadoFlash.respondido || [];
-                        estadoFlash.respondido.push(false);
-                        localStorage.setItem('flashcards_estado', JSON.stringify(estadoFlash));
-                        toast("✨ Salvo no Caderno e nos Flashcards!");
-                    }
-                } catch(e) { console.warn('Falha ao espelhar no flashcards_estado:', e); }
-            } else {
-                toast("✨ Flashcard criado!");
-            }
-        }
-        fecharModal('modalFlashcard');
-    }
+    function salvarFlashcard() { const p = document.getElementById('inputPergunta').value.trim(); const r = document.getElementById('inputResposta').value.trim(); const tagsStr = document.getElementById('inputTags').value.trim(); const tags = tagsStr ? tagsStr.split(',').map(t=>t.trim()).filter(t=>t) : []; if(!p || !r){ alert("Preencha"); return; } if(editandoFlashcardId) { const card = dados.flashcards.find(f=>f.id==editandoFlashcardId); if(card) { card.pergunta = p; card.resposta = r; card.tags = tags; salvarTudo(); atualizarPreview(); toast("✅ Atualizado!"); } } else { const enviarFlashcard=integrado ? confirm('Deseja enviar este card ao Flashcard também? Cancelar salva somente no caderno.') : false; dados.flashcards.push({ enviarFlashcard, criadoEm:new Date().toISOString(), id: Date.now(), concursoId: concursoAtualId, materiaId: materiaAtualId, assuntoId: assuntoAtualId, pergunta: p, resposta: r, tags: tags, intervalo: 0, repeticoes: 0, facilidade: 2.5, proxima_revisao: new Date().toISOString() }); salvarTudo(); atualizarPreview(); atualizarStats(); toast("✨ Flashcard criado!"); } fecharModal('modalFlashcard'); }
     document.getElementById('btnCriarFlashcard').onclick = criarFlashcard;
     document.getElementById('modalCancelar').onclick = () => fecharModal('modalFlashcard');
     document.getElementById('modalSalvar').onclick = salvarFlashcard;
@@ -2102,7 +1880,7 @@ function registrarAlteracaoLocal() {
         document.getElementById('estudoBtnVoz').onclick = () => { iniciarReconhecimentoVoz((texto) => { const cardAtual = studyQueue[studyIdx]; if(cardAtual.resposta.toLowerCase().includes(texto.toLowerCase()) || texto.toLowerCase().includes(cardAtual.resposta.toLowerCase())) { toast("✅ Correta!"); responder(4, true); } else { toast(`❌ Resposta: ${cardAtual.resposta.substring(0,50)}...`); } }); };
     }
     window.virarCard = function() { const inner = document.getElementById('estudoInner'); const botoes = document.getElementById('botoesDif'); estudoFlipped = !estudoFlipped; inner.classList.toggle('flipped', estudoFlipped); botoes.classList.toggle('hidden', !estudoFlipped); };
-    window.responder = function(qualidade, permitirSemVirar = false) { if (respostaEmAndamento) return; if (!estudoFlipped && !permitirSemVirar) { toast('👆 Revele a resposta antes de avaliar.'); return; } const card = studyQueue[studyIdx]; const original = dados.flashcards.find(f => f.id === card.id); if (!original) return; respostaEmAndamento = true; original.ultima_revisao = new Date().toISOString(); if (qualidade < 3) { original.repeticoes = 0; original.intervalo = 1; } else { if (original.repeticoes === 0) original.intervalo = 1; else if (original.repeticoes === 1) original.intervalo = 6; else original.intervalo = Math.round(original.intervalo * original.facilidade); original.repeticoes++; } const ajuste = 0.1 - (5 - qualidade) * (0.08 + (5 - qualidade) * 0.02); original.facilidade = Math.max(1.3, original.facilidade + ajuste); const novaData = new Date(); novaData.setDate(novaData.getDate() + original.intervalo); original.proxima_revisao = novaData.toISOString(); salvarTudo(); const mensagens = qualidade < 3 ? ['hard','💪 Vamos reforçar amanhã!'] : qualidade === 3 ? ['medium','👏 Bom trabalho! Continue firme.'] : ['easy','🌟 Mandou muito bem!']; const feedback = document.getElementById('feedbackResposta'); if (feedback) feedback.innerHTML = `<div class="study-feedback ${mensagens[0]}">${mensagens[1]}</div>`; setTimeout(() => { studyIdx++; mostrarCard(); atualizarStats(); atualizarPreview(); }, 450); };
+    window.responder = function(qualidade, permitirSemVirar = false) { if (respostaEmAndamento) return; if (!estudoFlipped && !permitirSemVirar) { toast('👆 Revele a resposta antes de avaliar.'); return; } const card = studyQueue[studyIdx]; const original = dados.flashcards.find(f => f.id === card.id); if (!original) return; respostaEmAndamento = true; registrarDiaDeRevisao(original); original.ultima_revisao = new Date().toISOString(); if (qualidade < 3) { original.repeticoes = 0; original.intervalo = 1; } else { if (original.repeticoes === 0) original.intervalo = 1; else if (original.repeticoes === 1) original.intervalo = 6; else original.intervalo = Math.round(original.intervalo * original.facilidade); original.repeticoes++; } const ajuste = 0.1 - (5 - qualidade) * (0.08 + (5 - qualidade) * 0.02); original.facilidade = Math.max(1.3, original.facilidade + ajuste); const novaData = new Date(); novaData.setDate(novaData.getDate() + original.intervalo); original.proxima_revisao = novaData.toISOString(); salvarTudo(); const mensagens = qualidade < 3 ? ['hard','💪 Vamos reforçar amanhã!'] : qualidade === 3 ? ['medium','👏 Bom trabalho! Continue firme.'] : ['easy','🌟 Mandou muito bem!']; const feedback = document.getElementById('feedbackResposta'); if (feedback) feedback.innerHTML = `<div class="study-feedback ${mensagens[0]}">${mensagens[1]}</div>`; setTimeout(() => { studyIdx++; mostrarCard(); atualizarStats(); atualizarPreview(); }, 450); };
     document.getElementById('btnEstudar').onclick = iniciarEstudo;
     document.getElementById('fecharEstudo').onclick = () => { fecharModal('modalEstudo'); estudoModalAberto = false; };
 
@@ -2127,10 +1905,7 @@ function registrarAlteracaoLocal() {
     function adicionarTarefa() { const hora = document.getElementById('novaHora').value; const desc = document.getElementById('novaDesc').value.trim(); const tipo = document.getElementById('novoTipo').value; if (!desc) { alert("Digite"); return; } cronograma.push({ hora, descricao: desc, tipo }); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); document.getElementById('novaDesc').value = ''; toast("✅ Adicionada"); }
     window.editarTarefa = function(i) { const t = cronograma[i]; const nh = prompt("Horário:", t.hora); if (!nh) return; const nd = prompt("Descrição:", t.descricao); if (nd===null) return; t.hora = nh; t.descricao = nd; localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); };
     window.excluirTarefa = function(i) { if(confirm("Remover?")){ cronograma.splice(i,1); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); } };
-    document.getElementById('btnCronograma').onclick = () => {
-        if (window.CalendarioInteligente) window.CalendarioInteligente.abrir();
-        else { renderCronograma(); abrirModal('modalCronograma'); }
-    };
+    document.getElementById('btnCronograma').onclick = () => window.abrirCalendarioRevisoes?.();
     document.getElementById('fecharCronograma').onclick = () => fecharModal('modalCronograma');
     document.getElementById('btnAdicionarTarefa').onclick = adicionarTarefa;
 
@@ -2443,7 +2218,9 @@ if (supabaseOk) {
     console.warn("Supabase não configurado: preencha SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY.");
     document.getElementById('userAvatar').onclick = () => alert('Configure a URL e a chave publicável do Supabase no início do script.');
 }
+window.dispatchEvent(new Event('calendario:fonte-pronta'));
 </script>
-<script src="melhorias-caderno.js?v=5"></script></body>
+<script src="melhorias-caderno.js?v=6"></script><script src="calendario-revisoes.js?v=1"></script>
+</body>
 </html>
 

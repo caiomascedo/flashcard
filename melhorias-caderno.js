@@ -13,6 +13,7 @@
     #colaCadernoFlutuante{position:fixed;right:16px;bottom:20px;z-index:25;background:#234d39;color:white;padding:8px 10px;border-radius:9px;font-size:12px}
     #colaCadernoDialog{width:min(92vw,520px);border:1px solid #94a3b8;border-radius:12px;padding:18px}#colaCadernoDialog::backdrop{background:#0007}#colaCadernoDialog textarea{width:100%;border:1px solid #94a3b8;padding:8px;margin:10px 0}
     `;document.head.append(style);
+    $('btnRecolherFerramentas').after($('btnCronograma'));
     const a=document.createElement('details');a.id='acoesAssuntoCompactas';a.innerHTML='<summary>📅 Ações do assunto</summary><div></div>';$('btnRecolherFerramentas').after(a);
     a.lastElementChild.append($('btnPaginaHoje'),$('btnFlashcardErro'));
     const hist=document.createElement('details');hist.id='historicoCaderno';hist.innerHTML='<summary>🕘 Histórico de cadernos e cards</summary><div id="historicoCadernoLista"></div>';$('sectionEstatisticas').parentElement.after(hist);
@@ -57,8 +58,9 @@
     #cadernoLateral button:focus-visible{outline:2px solid #168057;outline-offset:2px}
     body.dark-mode #cadernoLateral{background:#172a25;color:#e1ede7}body.dark-mode #navLista .pasta-quadrada{background:#213a31;border-color:#526e60}body.dark-mode #navLista .pasta-abrir{color:#ecf5ef}
     body.dark-mode #historicoCadernoLista button,body.dark-mode #historicoCaderno{color:#e1ede7}
-    @media(max-width:767px){#cadernoLayout{display:block}#cadernoLateral{position:fixed;right:8px;top:78px;bottom:12px;z-index:30;width:min(92vw,350px);max-height:none;border:1px solid #9bb3a5;box-shadow:0 4px 20px #172a2533}#cadernoLayout.lateral-oculta #cadernoLateral{display:none!important}}
+    @media(max-width:767px){#cadernoLayout{display:block}#cadernoLateral{position:fixed;right:8px;top:var(--caderno-paineis-top,78px);bottom:12px;z-index:30;width:min(92vw,350px);max-height:none;border:1px solid #9bb3a5;box-shadow:0 4px 20px #172a2533}#cadernoLayout.lateral-oculta #cadernoLateral{display:none!important}}
     `;document.head.append(layoutStyle);
+    const cabecalho=$('btnRecolherFerramentas').parentElement;const posicionarPainel=()=>lateral.style.setProperty('--caderno-paineis-top',Math.max(8,cabecalho.getBoundingClientRect().bottom+6)+'px');if(window.ResizeObserver)new ResizeObserver(posicionarPainel).observe(cabecalho);window.addEventListener('resize',posicionarPainel);posicionarPainel();
     if(window.innerWidth<768)exibirPainel(false);
     // Seções iniciam compactas, mas continuam expansíveis individualmente.
     for(const name of ['Estatisticas','Pendencias']){
@@ -71,7 +73,7 @@
             $('section'+name).classList.add('minimized');document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).textContent='+';document.querySelector(`[data-section="${name.toLowerCase()}"] .toggle-btn`).setAttribute('aria-expanded','false');
         }
     });
-    const dialog=document.createElement('dialog');dialog.id='colaCadernoDialog';dialog.innerHTML='<h3>📋 Cola inteligente (Caderno & Flashcards)</h3><p style="font-size:12px;color:#475569;margin:6px 0 10px;">Cole o cabeçalho de questão do QConcursos (ex: <code>Q4221348 Português > Interpretação de Textos , Noções Gerais...</code>) para criar sozinho o assunto e a página de hoje para seus erros, ou cole pergunta e resposta para gerar flashcard.</p><textarea rows="7" placeholder="Exemplos:&#10;1) Questão do QConcursos:&#10;Q4221348 Português > Interpretação de Textos , Noções Gerais...&#10;&#10;2) Flashcard (pergunta e resposta separadas por linha em branco):&#10;Qual é a regra X?&#10;&#10;A regra X define que..." aria-label="Texto da cola inteligente"></textarea><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"><button type="button" id="revisarColaCaderno" style="background:#234d39;color:#fff;font-weight:600;padding:8px 14px;border:0;border-radius:8px;cursor:pointer;">⚡ Processar Cola Inteligente</button><button type="button" id="criarApenasFlashcard" style="padding:8px 12px;border:1px solid #94a3b8;border-radius:8px;background:#f8fafc;cursor:pointer;">🎴 Criar Flashcard</button><button type="button" id="fecharColaCaderno" style="padding:8px 12px;border:1px solid #94a3b8;border-radius:8px;background:#f8fafc;cursor:pointer;">Cancelar</button></div>';document.body.append(dialog);
+    const dialog=document.createElement('dialog');dialog.id='colaCadernoDialog';dialog.innerHTML='<h3>📋 Cola inteligente</h3><p>Cole Matéria &gt; Assunto na primeira linha (código Q opcional). Depois, pergunta e resposta separadas por uma linha em branco. O assunto e a página de hoje serão preparados; confira antes de salvar.</p><textarea rows="8" aria-label="Pergunta e resposta juntas"></textarea><button type="button" id="revisarColaCaderno">Revisar flashcard</button> <button type="button" id="fecharColaCaderno">Cancelar</button>';document.body.append(dialog);
     function fecharAoClicarFora(modal){let inicioFora=false;const fora=e=>{const r=modal.getBoundingClientRect();return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;};modal.addEventListener('pointerdown',e=>{inicioFora=e.target===modal&&fora(e);});modal.addEventListener('click',e=>{if(inicioFora&&e.target===modal&&fora(e))modal.close();inicioFora=false;});}
     fecharAoClicarFora(dialog);
     const aviso=document.createElement('section');aviso.id='avisoEditorCaderno';aviso.hidden=true;aviso.innerHTML='<p role="status"></p><button type="button" id="criarFaltanteCaderno">Cadastrar automaticamente</button> <button type="button" id="editarDestinoCaderno">Editar / escolher assunto</button>';$('editor').before(aviso);
@@ -86,30 +88,7 @@
     new MutationObserver(atualizarAviso).observe($('editor'),{attributes:true,attributeFilter:['contenteditable']});window.addEventListener('caderno:pronto-local',atualizarAviso);atualizarAviso();
     const ajudaStyle=document.createElement('style');ajudaStyle.textContent='#avisoEditorCaderno{padding:12px;margin:8px 0;border:1px solid #a5bcae;border-radius:9px;background:#edf6ee;color:#214333;font-size:13px}#avisoEditorCaderno[hidden]{display:none}#avisoEditorCaderno button,#cadastroCadernoDialog button{padding:7px 10px;margin:5px 0;border:1px solid #829c8c;border-radius:7px;background:#fff;color:#214333;cursor:pointer}#cadastroCadernoDialog{width:min(92vw,460px);border:1px solid #94a3b8;border-radius:12px;padding:18px}#cadastroCadernoDialog::backdrop{background:#0007}#cadastroCadernoDialog label{display:block;margin:10px 0}#cadastroCadernoDialog input{display:block;width:100%;border:1px solid #94a3b8;border-radius:5px;padding:7px}#erroCadastroCaderno{color:#a71d31}';document.head.append(ajudaStyle);
     const b=document.createElement('button');b.id='colaCadernoFlutuante';b.textContent='📋 Cola inteligente';b.onclick=()=>dialog.showModal();document.body.append(b);
-    $('fecharColaCaderno').onclick=()=>dialog.close();
-    $('revisarColaCaderno').onclick=()=>{if(window.prepararColaCaderno?.(dialog.querySelector('textarea').value,false))dialog.close();};
-    $('criarApenasFlashcard').onclick=()=>{if(window.prepararColaCaderno?.(dialog.querySelector('textarea').value,true))dialog.close();};
-    // Colagem inteligente direta no campo de pergunta do flashcard
-    $('inputPergunta').addEventListener('paste',e=>{
-        const t=e.clipboardData.getData('text/plain');
-        const qc=window.extrairDadosQuestaoQC?.(t);
-        if(qc){
-            e.preventDefault();
-            const tagStr=[qc.codigoQuestao,qc.materia,qc.assunto,'erro'].filter(Boolean).join(', ');
-            $('inputTags').value=$('inputTags').value?$('inputTags').value+', '+tagStr:tagStr;
-            if(qc.resto && /\n[\t ]*\r?\n/.test(qc.resto)){
-                const p=qc.resto.split(/\n[\t ]*\n+/);
-                $('inputPergunta').value=p.shift().trim();
-                $('inputResposta').value=p.join('\n\n').trim();
-            } else {
-                $('inputPergunta').value=qc.resto||(qc.codigoQuestao?`${qc.codigoQuestao} · ${qc.assunto}`:qc.assunto);
-            }
-            return;
-        }
-        if(!/\n[\t ]*\r?\n/.test(t))return;
-        e.preventDefault();
-        const p=t.replace(/\r/g,'').trim().split(/\n[\t ]*\n+/);
-        $('inputPergunta').value=p.shift();
-        $('inputResposta').value=p.join('\n\n');
-    });
+    $('fecharColaCaderno').onclick=()=>dialog.close();$('revisarColaCaderno').onclick=()=>{if(window.prepararColaCaderno?.(dialog.querySelector('textarea').value))dialog.close();};
+    // Colagem direta no campo da pergunta também separa frente e verso.
+    $('inputPergunta').addEventListener('paste',e=>{const t=e.clipboardData.getData('text/plain');if(window.extrairDadosQuestaoQC?.(t)||/[>›]/.test(t.split('\n')[0])){e.preventDefault();window.prepararColaCaderno(t);return;}if(!/\n[\t ]*\r?\n/.test(t))return;e.preventDefault();const p=t.replace(/\r/g,'').trim().split(/\n[\t ]*\n+/);$('inputPergunta').value=p.shift();$('inputResposta').value=p.join('\n\n');});
 })();
