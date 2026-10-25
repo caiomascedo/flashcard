@@ -6,7 +6,7 @@
  let selected=today(),month=new Date(new Date().getFullYear(),new Date().getMonth(),1),marks={};
  const storage='calendario_revisoes_'+source.context;
  try{marks=JSON.parse(localStorage.getItem(storage)||'{}')||{};}catch{}
- const modal=document.createElement('dialog');modal.id='calendarioRevisoes';modal.className=source.context;modal.innerHTML='<header><strong>📅 Calendário de revisões</strong><button type="button" data-close aria-label="Fechar calendário">×</button></header><nav><button type="button" data-prev aria-label="Mês anterior">‹</button><b data-month></b><button type="button" data-next aria-label="Próximo mês">›</button><button type="button" data-today>Hoje</button></nav><p class="cal-legenda">Verde: cards do dia concluídos. Vermelho: cards pendentes. Revise os cadernos e marque sua leitura separadamente.</p><div class="cal-week">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="cal-grid"></div><h3 data-day></h3><button type="button" data-all>▶ Responder todos os cards deste dia</button><p data-progress></p><div data-tasks></div>';
+ const modal=document.createElement('dialog');modal.id='calendarioRevisoes';modal.className="cal-context-"+source.context;modal.innerHTML='<header><strong>📅 Calendário de revisões</strong><button type="button" data-close aria-label="Fechar calendário">×</button></header><nav><button type="button" data-prev aria-label="Mês anterior">‹</button><b data-month></b><button type="button" data-next aria-label="Próximo mês">›</button><button type="button" data-today>Hoje</button></nav><p class="cal-legenda">Verde: cards do dia concluídos. Vermelho: cards pendentes. Revise os cadernos e marque sua leitura separadamente.</p><div class="cal-week">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="cal-grid"></div><h3 data-day></h3><button type="button" data-all>▶ Responder todos os cards deste dia</button><p data-progress></p><div data-tasks></div>';
  document.body.append(modal);modal.addEventListener('keydown',event=>event.stopPropagation());
  function tasks(day){return source.items(day,today(),dateKey);}
  function completed(task,day){if(task.done)return true;const key=day+'|'+task.id;return Object.hasOwn(marks,key)?marks[key]:!!task.done;}
@@ -33,7 +33,7 @@
   }
   if(!list.length)area.textContent='Nenhuma revisão programada para este dia.';
  }
- window.abrirCalendarioRevisoes=()=>{selected=today();month=new Date(new Date().getFullYear(),new Date().getMonth(),1);render();modal.showModal();};
+ window.abrirCalendarioRevisoes=()=>{selected=today();month=new Date(new Date().getFullYear(),new Date().getMonth(),1);render();modal.showModal();modal.scrollTop=0;modal.querySelector("[data-tasks]").scrollTop=0;};
  modal.querySelector('[data-close]').onclick=()=>modal.close();
  modal.querySelector('[data-prev]').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);render();};
  modal.querySelector('[data-next]').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);render();};

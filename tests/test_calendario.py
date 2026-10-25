@@ -76,3 +76,24 @@ def test_calendar_and_paste(server,engine):
   expect(page.locator('#calendarioRevisoes .today.finished')).to_be_visible()
   assert not errors,errors
   browser.close()
+
+@pytest.mark.parametrize('engine,height',[('chromium',844),('webkit',844),('webkit',640)])
+def test_long_calendar_keeps_month_visible(server,engine,height):
+ with sync_playwright() as p:
+  browser=getattr(p,engine).launch();page=browser.new_page(viewport={'width':390,'height':height})
+  page.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@*/dist/umd/supabase.min.js',lambda r:r.fulfill(body=MOCK,content_type='application/javascript'))
+  page.route('https://i.postimg.cc/**',lambda r:r.abort())
+  page.goto(server);page.wait_for_function('!!window.FlashcardCaderno?.pronto')
+  page.evaluate("inicializarSistema(Array.from({length:80},(_,i)=>({concurso:'CEPI',materia:'Matéria '+i,assunto:'Assunto '+i,pergunta:'Pergunta '+i,resposta:'Resposta '+i})))")
+  page.get_by_role('button',name='📅 Calendário',exact=True).click()
+  dialog=page.locator('#calendarioRevisoes');grid=dialog.locator('.cal-grid');tasks=dialog.locator('[data-tasks]');header=dialog.locator('header')
+  expect(grid).to_be_visible();expect(tasks.locator('h4').first).to_be_visible()
+  assert header.bounding_box()['y']>=0
+  assert grid.bounding_box()['height']>(150 if height<=750 else 200)
+  assert grid.bounding_box()['y']+grid.bounding_box()['height']<=tasks.bounding_box()['y']
+  assert tasks.bounding_box()['height']>=60
+  assert tasks.evaluate('el=>el.scrollTop')==0
+  before=grid.bounding_box()['y'];tasks.evaluate('el=>el.scrollTop=el.scrollHeight')
+  assert grid.bounding_box()['y']==before
+  assert dialog.bounding_box()['y']+dialog.bounding_box()['height']<=height
+  browser.close()
