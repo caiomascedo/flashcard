@@ -12,6 +12,9 @@
   font: 14px system-ui, sans-serif;
 }
 #rascunhoFlashcard header [role="status"] { flex: 1; font-size: 12px; }
+#rascunhoFlashcard .rascunho-tema { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+#rascunhoFlashcard select { background: #193e37; color: #e3fff9; border: 1px solid #66bbae; border-radius: 7px; padding: 7px 4px; font: inherit; cursor: pointer; }
+#rascunhoFlashcard[data-theme="dark"], #rascunhoFlashcard[data-theme="dark"] iframe { background: #121212; color-scheme: dark; }
 #rascunhoFlashcard header button {
   margin-left: auto; border: 1px solid #66bbae; border-radius: 7px;
   padding: 8px 12px; background: #193e37; color: #e3fff9; cursor: pointer;
@@ -22,5 +25,5 @@ body.rascunho-aberto { overflow: hidden; }
   #rascunhoFlashcard[open] { width: 100%; height: 100dvh; border-radius: 0; border: 0; }
   #rascunhoFlashcard header { padding-top: max(8px, env(safe-area-inset-top)); gap: 6px; }
   #rascunhoFlashcard header strong { font-size: 13px; }
-  #rascunhoFlashcard header [role="status"] { font-size: 11px; }
+  #rascunhoFlashcard header [role="status"] { font-size: 11px; order: 1; flex-basis: 100%; }
 }

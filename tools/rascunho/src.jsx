@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Excalidraw, serializeAsJSON } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
@@ -70,8 +70,23 @@ window.addEventListener('keydown', (event) => {
     parent.postMessage({ type: 'rascunho:fechar' }, location.origin);
   }
 });
-createRoot(document.getElementById('root')).render(
+function Drawing() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('flashcard-rascunho-tema') === 'dark' ? 'dark' : 'light'; }
+    catch { return 'light'; }
+  });
+  useEffect(() => {
+    const receive = (event) => {
+      if (event.origin !== location.origin || event.source !== parent || event.data?.type !== 'rascunho:tema') return;
+      if (event.data.theme === 'light' || event.data.theme === 'dark') setTheme(event.data.theme);
+    };
+    window.addEventListener('message', receive);
+    return () => window.removeEventListener('message', receive);
+  }, []);
+  return (
   <Excalidraw
+    theme={theme}
+    UIOptions={{ canvasActions: { toggleTheme: false } }}
     langCode="pt-BR"
     name="Rascunho de matemática"
     initialData={initialData}
@@ -85,5 +100,7 @@ createRoot(document.getElementById('root')).render(
       clearTimeout(timer);
       timer = setTimeout(save, 350);
     }}
-  />,
-);
+  />
+  );
+}
+createRoot(document.getElementById('root')).render(<Drawing />);

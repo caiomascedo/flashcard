@@ -2,9 +2,19 @@
   const dialog = document.createElement('dialog');
   dialog.id = 'rascunhoFlashcard';
   dialog.setAttribute('aria-labelledby', 'rascunhoTitulo');
-  dialog.innerHTML = `<header><strong id="rascunhoTitulo">✏️ Rascunho</strong><span role="status">Carregando quadro…</span><button type="button" aria-label="Voltar aos cards">← Voltar</button></header><iframe title="Quadro de rascunho de matemática" hidden></iframe>`;
+  dialog.innerHTML = `<header><strong id="rascunhoTitulo">✏️ Rascunho</strong><label class="rascunho-tema">Tema <select aria-label="Tema do rascunho"><option value="light">☀️ Claro</option><option value="dark">🌙 Escuro</option></select></label><span role="status">Carregando quadro…</span><button type="button" aria-label="Voltar aos cards">← Voltar</button></header><iframe title="Quadro de rascunho de matemática" hidden></iframe>`;
   document.body.append(dialog);
   const frame = dialog.querySelector('iframe');
+  const themeSelect = dialog.querySelector('select');
+  try { themeSelect.value = localStorage.getItem('flashcard-rascunho-tema') === 'dark' ? 'dark' : 'light'; } catch {}
+  const setTheme = () => {
+    dialog.dataset.theme = themeSelect.value;
+    try { localStorage.setItem('flashcard-rascunho-tema', themeSelect.value); } catch {}
+    frame.contentWindow?.postMessage({ type: 'rascunho:tema', theme: themeSelect.value }, location.origin);
+  };
+  dialog.dataset.theme = themeSelect.value;
+  themeSelect.onchange = setTheme;
+  frame.addEventListener('load', setTheme);
   const save = () => frame.contentWindow?.postMessage({ type: 'rascunho:salvar' }, location.origin);
   const close = () => { save(); dialog.close(); };
   dialog.querySelector('button').onclick = close;
@@ -19,7 +29,7 @@
   window.abrirRascunhoFlashcard = () => {
     document.getElementById('menuFlashcard')?.removeAttribute('open');
     if (!frame.getAttribute('src')) {
-      frame.src = 'rascunho/index.html?v=1';
+      frame.src = 'rascunho/index.html?v=2';
       frame.hidden = false;
     }
     if (!dialog.open) dialog.showModal();

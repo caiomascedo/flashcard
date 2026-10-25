@@ -3,6 +3,8 @@
 O botão **✏️ Rascunho**, disponível também no modo foco, abre o Excalidraw
 0.18.1 em português dentro do Flashcard. O quadro começa com o lápis selecionado;
 as ferramentas nativas incluem borracha, desfazer, texto e exportação.
+O seletor **Tema**, no cabeçalho, alterna entre claro e escuro. A preferência
+é mantida neste navegador, sem alterar os desenhos existentes.
 
 O aplicativo é hospedado neste repositório, sem abrir outro site. Seu JavaScript,
 estilos e fontes só são carregados ao abrir o quadro pela primeira vez. Fechar
