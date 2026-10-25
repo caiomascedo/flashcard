@@ -372,6 +372,8 @@
         #btnRecolherFerramentas:focus-visible { outline:3px solid #16a34a; outline-offset:2px; }
         body.dark-mode #btnRecolherFerramentas { background:#334155; color:#e2e8f0; }
     </style>
+    <link rel="stylesheet" href="calendario-inteligente.css?v=1">
+    <script src="calendario-inteligente.js?v=1"></script>
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen pb-16">
 
@@ -1837,7 +1839,10 @@ function registrarAlteracaoLocal() {
     function adicionarTarefa() { const hora = document.getElementById('novaHora').value; const desc = document.getElementById('novaDesc').value.trim(); const tipo = document.getElementById('novoTipo').value; if (!desc) { alert("Digite"); return; } cronograma.push({ hora, descricao: desc, tipo }); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); document.getElementById('novaDesc').value = ''; toast("✅ Adicionada"); }
     window.editarTarefa = function(i) { const t = cronograma[i]; const nh = prompt("Horário:", t.hora); if (!nh) return; const nd = prompt("Descrição:", t.descricao); if (nd===null) return; t.hora = nh; t.descricao = nd; localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); };
     window.excluirTarefa = function(i) { if(confirm("Remover?")){ cronograma.splice(i,1); localStorage.setItem('cronograma', JSON.stringify(cronograma)); registrarAlteracaoLocal(); renderCronograma(); } };
-    document.getElementById('btnCronograma').onclick = () => { renderCronograma(); abrirModal('modalCronograma'); };
+    document.getElementById('btnCronograma').onclick = () => {
+        if (window.CalendarioInteligente) window.CalendarioInteligente.abrir();
+        else { renderCronograma(); abrirModal('modalCronograma'); }
+    };
     document.getElementById('fecharCronograma').onclick = () => fecharModal('modalCronograma');
     document.getElementById('btnAdicionarTarefa').onclick = adicionarTarefa;
 

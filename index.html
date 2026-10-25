@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,8 @@
     <link rel="manifest" href="site.webmanifest?v=3">
     <meta name="apple-mobile-web-app-title" content="Flashcards">
     <meta name="theme-color" content="#0a0e1a">
+    <link rel="stylesheet" href="calendario-inteligente.css?v=1">
+    <script src="calendario-inteligente.js?v=1"></script>
     <style>
         /* ================================================================
            ESTILOS GERAIS
@@ -1912,6 +1914,7 @@
             <div class="header-top">
                 <h1 id="tituloPrincipal">📜 Flashcards</h1>
                 <div class="header-actions">
+                    <button type="button" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 700; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer;" onclick="window.CalendarioInteligente?.abrir()">📅 Calendário</button>
                     <button type="button" onclick="abrirCadernoIntegrado()">📓 Caderno completo</button>
                     <button id="modoFocoBtn" onclick="alternarModoFoco()" aria-pressed="false">🎯 Modo foco</button>
                     <details id="menuFlashcard">
