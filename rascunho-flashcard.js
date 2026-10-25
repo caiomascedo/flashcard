@@ -2,7 +2,7 @@
   const dialog = document.createElement('dialog');
   dialog.id = 'rascunhoFlashcard';
   dialog.setAttribute('aria-labelledby', 'rascunhoTitulo');
-  dialog.innerHTML = `<header><strong id="rascunhoTitulo">✏️ Rascunho</strong><label class="rascunho-tema">Tema <select aria-label="Tema do rascunho"><option value="light">☀️ Claro</option><option value="dark">🌙 Escuro</option></select></label><span role="status">Carregando quadro…</span><button type="button" aria-label="Voltar aos cards">← Voltar</button></header><iframe title="Quadro de rascunho de matemática" hidden></iframe>`;
+  dialog.innerHTML = `<header><strong id="rascunhoTitulo">✏️ Rascunho</strong><label class="rascunho-tema">Tema <select aria-label="Tema do rascunho"><option value="light">☀️ Claro</option><option value="dark">🌙 Escuro</option></select></label><span role="status">Carregando quadro…</span><button type="button" class="rascunho-expandir" aria-pressed="false">⤢ Expandir</button><button type="button" aria-label="Voltar aos cards">← Voltar</button></header><iframe title="Quadro de rascunho de matemática" hidden></iframe>`;
   document.body.append(dialog);
   const frame = dialog.querySelector('iframe');
   const themeSelect = dialog.querySelector('select');
@@ -17,7 +17,13 @@
   frame.addEventListener('load', setTheme);
   const save = () => frame.contentWindow?.postMessage({ type: 'rascunho:salvar' }, location.origin);
   const close = () => { save(); dialog.close(); };
-  dialog.querySelector('button').onclick = close;
+  dialog.querySelector('[aria-label="Voltar aos cards"]').onclick = close;
+  const expand = dialog.querySelector('.rascunho-expandir');
+  expand.onclick = () => {
+    const expanded = dialog.classList.toggle('rascunho-expandido');
+    expand.setAttribute('aria-pressed', String(expanded));
+    expand.textContent = expanded ? '⤡ Reduzir' : '⤢ Expandir';
+  };
   dialog.addEventListener('cancel', save);
   dialog.addEventListener('close', () => { document.body.classList.remove('rascunho-aberto'); });
   dialog.addEventListener('click', event => { if (event.target === dialog) close(); });

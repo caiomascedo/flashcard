@@ -45,6 +45,15 @@ def test_lazy_drawing_and_restore(server, engine, width):
         assert len(saved['elements']) == 1
         assert saved['elements'][0]['type'] == 'freedraw'
         element_id = saved['elements'][0]['id']
+        normal = dialog.bounding_box()
+        page.get_by_role('button', name='⤢ Expandir', exact=True).click()
+        expect(dialog.locator('.rascunho-expandir')).to_have_attribute('aria-pressed', 'true')
+        assert dialog.bounding_box() == pytest.approx({'x': 0, 'y': 0, 'width': width, 'height': 844}, abs=.1)
+        assert canvas.bounding_box()['height'] > bounds['height']
+        assert drawing_frame.evaluate(read)['elements'][0]['id'] == element_id
+        page.get_by_role('button', name='⤡ Reduzir', exact=True).click()
+        expect(dialog.locator('.rascunho-expandir')).to_have_attribute('aria-pressed', 'false')
+        assert dialog.bounding_box() == normal
         # Theme switches immediately, keeps the drawing and survives a reload.
         theme = dialog.get_by_label('Tema do rascunho')
         theme.select_option('dark')

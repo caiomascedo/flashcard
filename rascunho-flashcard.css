@@ -22,8 +22,17 @@
 #rascunhoFlashcard iframe { border: 0; width: 100%; flex: 1; min-height: 0; background: white; }
 body.rascunho-aberto { overflow: hidden; }
 @media (max-width: 600px) {
-  #rascunhoFlashcard[open] { width: 100%; height: 100dvh; border-radius: 0; border: 0; }
+  #rascunhoFlashcard[open] { width: 98vw; height: 96dvh; }
   #rascunhoFlashcard header { padding-top: max(8px, env(safe-area-inset-top)); gap: 6px; }
   #rascunhoFlashcard header strong { font-size: 13px; }
   #rascunhoFlashcard header [role="status"] { font-size: 11px; order: 1; flex-basis: 100%; }
 }
+#rascunhoFlashcard[open].rascunho-expandido {
+  inset: 0; margin: 0; width: 100vw; height: 100dvh; border: 0; border-radius: 0;
+}
+#rascunhoFlashcard.rascunho-expandido header { padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left)); gap: 8px; }
+#rascunhoFlashcard.rascunho-expandido header strong,
+#rascunhoFlashcard.rascunho-expandido header .rascunho-tema,
+#rascunhoFlashcard.rascunho-expandido header [role="status"] { display: none; }
+#rascunhoFlashcard.rascunho-expandido header button { margin-left: 0; }
+#rascunhoFlashcard.rascunho-expandido header .rascunho-expandir { margin-left: auto; }

@@ -5,6 +5,8 @@ O botão **✏️ Rascunho**, disponível também no modo foco, abre o Excalidra
 as ferramentas nativas incluem borracha, desfazer, texto e exportação.
 O seletor **Tema**, no cabeçalho, alterna entre claro e escuro. A preferência
 é mantida neste navegador, sem alterar os desenhos existentes.
+**⤢ Expandir** ocupa toda a área visível e recolhe o cabeçalho para dar mais
+espaço ao quadro. **⤡ Reduzir** restaura o tamanho e os controles anteriores.
 
 O aplicativo é hospedado neste repositório, sem abrir outro site. Seu JavaScript,
 estilos e fontes só são carregados ao abrir o quadro pela primeira vez. Fechar
