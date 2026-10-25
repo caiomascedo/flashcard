@@ -6,6 +6,13 @@
   document.body.append(dialog);
   const frame = dialog.querySelector('iframe');
   const themeSelect = dialog.querySelector('select');
+  const library = document.createElement('button');
+  library.type = 'button';
+  library.className = 'rascunho-biblioteca';
+  library.textContent = '📚 Salvar na biblioteca';
+  library.title = 'Salvar a seleção ou, se nada estiver selecionado, o desenho inteiro';
+  library.onclick = () => frame.contentWindow?.postMessage({ type: 'rascunho:biblioteca' }, location.origin);
+  dialog.querySelector('.rascunho-expandir').before(library);
   try { themeSelect.value = localStorage.getItem('flashcard-rascunho-tema') === 'dark' ? 'dark' : 'light'; } catch {}
   const setTheme = () => {
     dialog.dataset.theme = themeSelect.value;
@@ -35,7 +42,7 @@
   window.abrirRascunhoFlashcard = () => {
     document.getElementById('menuFlashcard')?.removeAttribute('open');
     if (!frame.getAttribute('src')) {
-      frame.src = 'rascunho/index.html?v=2';
+      frame.src = 'rascunho/index.html?v=3';
       frame.hidden = false;
     }
     if (!dialog.open) dialog.showModal();

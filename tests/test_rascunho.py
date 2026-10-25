@@ -61,6 +61,11 @@ def test_lazy_drawing_and_restore(server, engine, width):
         assert page.evaluate("localStorage.getItem('flashcard-rascunho-tema')") == 'dark'
         expect(dialog.locator('[role="status"]')).to_have_text('Salvo neste navegador')
         assert drawing_frame.evaluate(read)['elements'][0]['id'] == element_id
+        page.get_by_role('button', name='📚 Salvar na biblioteca', exact=True).click()
+        expect(frame.locator('.Toast')).to_contain_text('salvo na biblioteca')
+        library_read = read.replace("get('principal')", "get('biblioteca')")
+        library = drawing_frame.evaluate(library_read)
+        assert len(library) == 1 and library[0]['elements'][0]['id'] == element_id
         page.get_by_role('button', name='Voltar aos cards', exact=True).click()
         expect(dialog).not_to_be_visible()
         assert page.evaluate('statusCard.every(s => s === "nao")')
@@ -75,6 +80,16 @@ def test_lazy_drawing_and_restore(server, engine, width):
         expect(dialog.locator('[role="status"]')).to_have_text('Salvo neste navegador')
         drawing_frame = next(f for f in page.frames if '/rascunho/index.html' in f.url)
         assert drawing_frame.evaluate(read)['elements'][0]['id'] == element_id
+        restored_library = drawing_frame.evaluate(library_read)
+        assert len(restored_library) == 1 and restored_library[0]['id'] == library[0]['id']
+        frame.get_by_title('Biblioteca', exact=True).click()
+        library_item = frame.locator('.library-unit__dragger svg').first
+        expect(library_item).to_be_visible()
+        frame.locator('.library-unit__dragger').first.click()
+        area = canvas.bounding_box()
+        page.mouse.click(area['x'] + area['width'] * .55, area['y'] + area['height'] * .65)
+        expect(dialog.locator('[role="status"]')).to_have_text('Salvo neste navegador')
+        assert len(drawing_frame.evaluate(read)['elements']) == 2
         theme.select_option('light')
         expect(frame.locator('.excalidraw')).not_to_have_class(re.compile('theme--dark'))
         assert len(page.context.pages) == 1

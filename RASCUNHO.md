@@ -7,6 +7,10 @@ O seletor **Tema**, no cabeçalho, alterna entre claro e escuro. A preferência
 é mantida neste navegador, sem alterar os desenhos existentes.
 **⤢ Expandir** ocupa toda a área visível e recolhe o cabeçalho para dar mais
 espaço ao quadro. **⤡ Reduzir** restaura o tamanho e os controles anteriores.
+**📚 Salvar na biblioteca** guarda a seleção ou o desenho inteiro quando nada
+estiver selecionado. A biblioteca nativa também é salva automaticamente neste
+navegador, incluindo inclusões e exclusões feitas pelo painel. Seus desenhos e
+textos podem ser reutilizados ao clicar nos itens salvos, mesmo após recarregar.
 
 O aplicativo é hospedado neste repositório, sem abrir outro site. Seu JavaScript,
 estilos e fontes só são carregados ao abrir o quadro pela primeira vez. Fechar
