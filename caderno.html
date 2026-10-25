@@ -1470,13 +1470,209 @@ function registrarAlteracaoLocal() {
         }
         if(!lista.children.length)lista.textContent='Nenhum caderno ou card cadastrado.';
     };
-    window.prepararColaCaderno=function(texto){
-        if(!concursoAtualId||!materiaAtualId||!assuntoAtualId){toast('Selecione o assunto antes de cadastrar.');return false;}
-        const partes=String(texto).replace(/\r\n?/g,'\n').trim().split(/\n[\t ]*\n+/);
-        editandoFlashcardId=null;
-        document.getElementById('inputPergunta').value=partes.shift()||'';
-        document.getElementById('inputResposta').value=partes.join('\n\n');
-        document.getElementById('inputTags').value='';abrirModal('modalFlashcard');return true;
+    window.extrairDadosQuestaoQC = function(texto) {
+        const raw = String(texto || '').trim();
+        if (!raw) return null;
+        const linhas = raw.split(/\r?\n/);
+        for (let i = 0; i < Math.min(linhas.length, 6); i++) {
+            const linha = linhas[i].trim();
+            const m = linha.match(/^(?:quest[aã]o:?\s*)?(?:(Q\d+|\b\d{6,8}\b)\s*[-–—:]?\s*)?([^>\r\n]+?)\s*>\s*([^,\r\n]+?)(?:\s*,\s*([^\r\n]+))?$/i);
+            if (m && m[2] && m[3]) {
+                let codigo = m[1] || '';
+                if (!codigo && i > 0 && /^(?:quest[aã]o:?\s*)?(Q\d+|\b\d{6,8}\b)$/i.test(linhas[i-1].trim())) {
+                    const prev = linhas[i-1].trim().match(/(Q\d+|\b\d{6,8}\b)/i);
+                    if (prev) codigo = prev[1];
+                }
+                if (codigo && !codigo.toUpperCase().startsWith('Q')) codigo = 'Q' + codigo;
+                else if (codigo) codigo = codigo.toUpperCase();
+                const materia = m[2].trim();
+                const assunto = m[3].trim();
+                const topico = (m[4] || '').trim();
+                const resto = linhas.filter((_, idx) => idx !== i && (idx !== i-1 || !codigo)).join('\n').trim();
+                return { codigoQuestao: codigo, materia, assunto, topico, resto };
+            }
+        }
+        const fb = raw.match(/(?:quest[aã]o:?\s*)?(Q\d+|\b\d{6,8}\b)\s*[-–—:]?\s*([^>\r\n]+?)\s*>\s*([^,\r\n]+?)(?:\s*,\s*([^\r\n]+))?(?:\r?\n|$)/i);
+        if (fb && fb[2] && fb[3]) {
+            let codigo = fb[1] || '';
+            if (codigo && !codigo.toUpperCase().startsWith('Q')) codigo = 'Q' + codigo;
+            else if (codigo) codigo = codigo.toUpperCase();
+            return {
+                codigoQuestao: codigo,
+                materia: fb[2].trim(),
+                assunto: fb[3].trim(),
+                topico: (fb[4] || '').trim(),
+                resto: raw.replace(fb[0], '').trim()
+            };
+        }
+        return null;
+    };
+
+    window.processarQuestaoQCCaderno = function(dadosQC) {
+        if (!sincronizacaoInicialConcluida && (!dados.concursos || dados.concursos.length === 0)) {
+            toast('Aguarde a sincronização inicial antes de cadastrar.');
+            return false;
+        }
+        dados.concursos ||= [];
+        const normalizar = CadernoAssuntoPMPI.normalizar;
+
+        // 1. Concurso (atual, ou PMPI, ou primeiro disponível)
+        let concurso = dados.concursos.find(c => c.id == concursoAtualId)
+            || dados.concursos.find(c => normalizar(c.nome) === 'pmpi' || /pm\s*pi/i.test(c.nome))
+            || dados.concursos[0];
+        const idGen = CadernoAssuntoPMPI.geradorId(dados);
+        if (!concurso) {
+            concurso = { id: idGen(), nome: 'PMPI', materias: [] };
+            dados.concursos.push(concurso);
+        }
+
+        // 2. Matéria (procura existente ou cria nova)
+        concurso.materias ||= [];
+        const normMateria = normalizar(dadosQC.materia);
+        const chaveMateria = CadernoAssuntoPMPI.materiaChave(dadosQC.materia);
+        let materia = concurso.materias.find(m => 
+            normalizar(m.nome) === normMateria || 
+            CadernoAssuntoPMPI.materiaChave(m.nome) === chaveMateria
+        );
+        if (!materia) {
+            const nomeFormatado = dadosQC.materia.trim().charAt(0).toUpperCase() + dadosQC.materia.trim().slice(1);
+            materia = { id: idGen(), nome: nomeFormatado, assuntos: [] };
+            concurso.materias.push(materia);
+        }
+
+        // 3. Assunto (procura existente ou cria novo)
+        materia.assuntos ||= [];
+        const normAssunto = normalizar(dadosQC.assunto);
+        const chaveAssunto = CadernoAssuntoPMPI.assuntoChave(dadosQC.assunto);
+        let assunto = materia.assuntos.find(a => 
+            normalizar(a.nome) === normAssunto || 
+            CadernoAssuntoPMPI.assuntoChave(a.nome) === chaveAssunto ||
+            (a.unificado && a.unificado.chave === chaveAssunto)
+        );
+        if (!assunto) {
+            const nomeFormatado = dadosQC.assunto.trim().charAt(0).toUpperCase() + dadosQC.assunto.trim().slice(1);
+            assunto = { id: idGen(), nome: nomeFormatado, paginas: [] };
+            materia.assuntos.push(assunto);
+        }
+
+        salvarEditor();
+
+        // 4. Cria página para a DATA DE HOJE automática com a estrutura de erros
+        assunto.paginas ||= [];
+        const agora = new Date();
+        const hojeFormatada = agora.toLocaleDateString('pt-BR');
+        const tit = dadosQC.codigoQuestao ? `${dadosQC.codigoQuestao} · ${hojeFormatada}` : `Erros · ${hojeFormatada} · Pág. ${assunto.paginas.length + 1}`;
+        const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const qcLink = dadosQC.codigoQuestao ? `https://www.qconcursos.com/questoes-de-concursos/questoes/${dadosQC.codigoQuestao.replace(/^Q/i, '')}` : '';
+
+        let html = `<h2>${dadosQC.codigoQuestao ? esc(dadosQC.codigoQuestao) + ' · ' : ''}${esc(materia.nome)} › ${esc(assunto.nome)}</h2>`;
+        if (dadosQC.topico) {
+            html += `<p style="color:#64748b; font-size:14px; margin-bottom:4px;"><strong>Tópico:</strong> ${esc(dadosQC.topico)}</p>`;
+        }
+        html += `<p style="font-size:13px; color:#475569; margin-bottom:8px;"><strong>Data de Estudo:</strong> 📅 ${hojeFormatada}</p>`;
+        if (qcLink) {
+            html += `<p style="font-size:13px;"><a href="${qcLink}" target="_blank" rel="noopener noreferrer" style="color:#166534; font-weight:600; text-decoration:underline;">🔗 Abrir ${esc(dadosQC.codigoQuestao)} no QConcursos</a></p>`;
+        }
+        html += `<hr style="margin: 12px 0; border:0; border-top: 1px solid #cbd5e1;">`;
+
+        if (dadosQC.resto) {
+            html += `<div style="background:#f8fafc; border-left:4px solid #3b82f6; padding:10px 14px; border-radius:6px; margin-bottom:14px; font-size:13px; line-height:1.5; color:#1e293b;"><strong>Enunciado / Trecho copiado:</strong><br>${esc(dadosQC.resto).replace(/\n/g, '<br>')}</div>`;
+        }
+
+        html += `<h3 style="color:#dc2626; margin-top:14px;">❌ O que errei / Por que errei:</h3>`;
+        html += `<p style="color:#334155;"><em>(Escreva aqui o motivo do erro, o distrator marcado, a pegadinha...)</em></p><p><br></p>`;
+        html += `<h3 style="color:#16a34a; margin-top:14px;">💡 Regra correta / Como não errar mais:</h3>`;
+        html += `<p style="color:#334155;"></p><p><br></p>`;
+
+        const novaPagina = {
+            id: idGen(),
+            titulo: tit,
+            data: agora.toISOString(),
+            cadernoHTML: html
+        };
+        assunto.paginas.push(novaPagina);
+        assunto.paginaAtualId = novaPagina.id;
+
+        concursoAtualId = concurso.id;
+        materiaAtualId = materia.id;
+        assuntoAtualId = assunto.id;
+        paginaAtualId = novaPagina.id;
+        concurso.materiaAtualId = materia.id;
+        materia.assuntoAtualId = assunto.id;
+        navLevel = 'paginas';
+
+        salvarTudo();
+        renderNav();
+        carregarEditor();
+        atualizarCabecalho();
+        atualizarAtalhosDoAssunto();
+        window.atualizarHistoricoCaderno?.();
+
+        const ed = document.getElementById('editor');
+        if (ed) {
+            ed.focus();
+            try {
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(ed);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch(e) {}
+        }
+
+        toast(`📕 Assunto "${assunto.nome}" e página de hoje (${tit}) criados!`);
+        return true;
+    };
+
+    window.prepararColaCaderno = function(texto, forcarFlashcard = false) {
+        const limpo = String(texto || '').trim();
+        if (!limpo) {
+            toast('Cole algum texto para processar.');
+            return false;
+        }
+
+        const dadosQC = window.extrairDadosQuestaoQC(limpo);
+
+        // Se for questão do QConcursos e não forçar modo flashcard exclusivo
+        if (dadosQC && !forcarFlashcard) {
+            const sucesso = window.processarQuestaoQCCaderno(dadosQC);
+            if (sucesso && dadosQC.resto && /\n[\t ]*\r?\n/.test(dadosQC.resto)) {
+                setTimeout(() => {
+                    const partes = dadosQC.resto.split(/\n[\t ]*\n+/);
+                    editandoFlashcardId = null;
+                    document.getElementById('inputPergunta').value = partes.shift() || '';
+                    document.getElementById('inputResposta').value = partes.join('\n\n');
+                    document.getElementById('inputTags').value = `${dadosQC.codigoQuestao || ''}, ${dadosQC.materia}, ${dadosQC.assunto}, erro`.replace(/^, /, '');
+                    abrirModal('modalFlashcard');
+                    toast('🎴 Flashcard pronto para revisão!');
+                }, 300);
+            }
+            return sucesso;
+        }
+
+        // Se for cadastrar flashcard
+        if (!concursoAtualId || !materiaAtualId || !assuntoAtualId) {
+            const c = dados.concursos[0];
+            const m = c?.materias?.[0];
+            const a = m?.assuntos?.[0];
+            if (c && m && a) {
+                concursoAtualId = c.id;
+                materiaAtualId = m.id;
+                assuntoAtualId = a.id;
+            } else {
+                toast('Selecione ou crie um assunto antes de cadastrar flashcard.');
+                return false;
+            }
+        }
+
+        const partes = limpo.replace(/\r\n?/g, '\n').split(/\n[\t ]*\n+/);
+        editandoFlashcardId = null;
+        document.getElementById('inputPergunta').value = partes.shift() || '';
+        document.getElementById('inputResposta').value = partes.join('\n\n');
+        document.getElementById('inputTags').value = dadosQC ? `${dadosQC.codigoQuestao || ''}, ${dadosQC.materia}, ${dadosQC.assunto}, erro`.replace(/^, /, '') : 'erro, revisão, PMPI';
+        abrirModal('modalFlashcard');
+        return true;
     };
 
     // ==================== NAVEGAÇÃO EM PASTAS (Concursos > Matérias > Assuntos > Páginas) ====================
@@ -1852,7 +2048,11 @@ function registrarAlteracaoLocal() {
                     const concurso = dados.concursos.find(c => c.id == concursoAtualId);
                     const materia = concurso?.materias?.find(m => m.id == materiaAtualId);
                     const assunto = materia?.assuntos?.find(a => a.id == assuntoAtualId);
-                    const estadoFlash = JSON.parse(localStorage.getItem('flashcards_estado') || 'null');
+                    let estadoFlash = null;
+                    try { estadoFlash = JSON.parse(localStorage.getItem('flashcards_estado') || 'null'); } catch(e){}
+                    if (!estadoFlash || !Array.isArray(estadoFlash.flashcards)) {
+                        estadoFlash = { flashcards: [], statusCard: [], respondido: [], total: 0 };
+                    }
                     if (estadoFlash && Array.isArray(estadoFlash.flashcards)) {
                         estadoFlash.flashcards.push({
                             pergunta: p,
