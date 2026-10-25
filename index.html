@@ -2084,6 +2084,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.53.0/dist/umd/supabase.min.js"></script>
     <script src="questoes-pmpi-iniciais.js"></script>
+    <script src="sincronizacao-segura.js?v=1"></script>
     <script>
         const SUPABASE_URL = 'https://bgyfieezwztchyygrnqv.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bb6SVDmItQ8U5ErVtVTfuA_0srzQd2U';
@@ -2097,6 +2098,22 @@
         let totalRemotoConhecido = 0;
         let reducaoAutorizada = 0;
         let canalSincronizacao = null;
+        let estadoBaseSincronizado = null;
+        let leituraRemotaFalhou = false;
+        let conflitoPendente = false;
+        let tentativasSincronizacao = 0;
+        let estadoEmEnvio = null;
+        let eventoRemotoPendente = null;
+        const sync = window.SincronizacaoSegura;
+        const chaveSync = () => `flashcards_sync_${usuarioAtual?.id || ''}`;
+        const identidadeCardSincronizacao = card => card._idSincronizacao || idImportacaoCaderno(card);
+        function marcarPendente(pendente) {
+            try { localStorage.setItem(chaveSync(), JSON.stringify({ pendente })); } catch {}
+        }
+        function registrarBase(estado) {
+            estadoBaseSincronizado = sync.clone(estado);
+            if (usuarioAtual) sync.store(usuarioAtual.id, estadoBaseSincronizado).catch(console.warn);
+        }
         const DEVICE_ID_KEY = 'flashcards_device_id';
         const CONTAGEM_SEGURA_KEY = 'flashcards_contagem_segura';
         const deviceId = localStorage.getItem(DEVICE_ID_KEY) ||
@@ -2141,9 +2158,11 @@
                 .eq('user_id', usuarioAtual.id)
                 .maybeSingle();
             if (error) {
+                leituraRemotaFalhou = true;
                 console.error('Falha ao carregar flashcards:', error.message);
                 return null;
             }
+            leituraRemotaFalhou = false;
             if (!data) return null;
             versaoRemota = Number(data.versao) || 1;
             totalRemotoConhecido = contarCardsDoEstado(data.estado);
@@ -2160,20 +2179,36 @@
 
         function agendarSincronizacao(estado, reducaoPermitida = 0) {
             if (!usuarioAtual) return;
-            sincronizacaoPendente = { estado, reducaoPermitida };
+            if (sync.equal(estado, estadoBaseSincronizado) && !sincronizacaoEmAndamento) {
+                sincronizacaoPendente = null;
+                marcarPendente(false);
+                return;
+            }
+            if (sincronizacaoPendente && sync.equal(estado, sincronizacaoPendente.estado)) return;
+            sincronizacaoPendente = { estado: sync.clone(estado), reducaoPermitida: Math.max(reducaoPermitida, sincronizacaoPendente?.reducaoPermitida || 0) };
+            marcarPendente(true);
             clearTimeout(sincronizacaoTimer);
             sincronizacaoTimer = setTimeout(sincronizarAgora, 900);
         }
 
         async function sincronizarAgora() {
-            if (!usuarioAtual || sincronizacaoEmAndamento || !sincronizacaoPendente) return;
+            if (!usuarioAtual || conflitoPendente || sincronizacaoEmAndamento || !sincronizacaoPendente) return;
             sincronizacaoEmAndamento = true;
             const pendente = sincronizacaoPendente;
+            estadoEmEnvio = pendente.estado;
             sincronizacaoPendente = null;
             const totalLocal = contarCardsDoEstado(pendente.estado);
             const reducao = Math.max(0, totalRemotoConhecido - totalLocal);
 
             try {
+                if (leituraRemotaFalhou) {
+                    const remoto = await carregarEstadoRemoto();
+                    if (leituraRemotaFalhou) throw new Error('Aguardando conexão com a nuvem');
+                    if (remoto && !sync.equal(remoto.estado, estadoBaseSincronizado)) {
+                        await resolverConflitoDeSincronizacao(remoto.estado);
+                        return;
+                    }
+                }
                 if (reducao > Math.max(1, pendente.reducaoPermitida)) {
                     await criarBackupLocal(pendente.estado, 'sincronizacao-bloqueada');
                     showToast(`🛑 Sincronização bloqueada: a nuvem tem ${totalRemotoConhecido} cards e este aparelho ${totalLocal}.`, 7000);
@@ -2208,37 +2243,96 @@
                     error = resposta.error;
                 }
 
+                if (error?.code === '23505') {
+                    const remoto = await carregarEstadoRemoto();
+                    if (remoto) { await resolverConflitoDeSincronizacao(remoto.estado); return; }
+                }
                 if (error) throw error;
                 if (!data) {
                     const remoto = await carregarEstadoRemoto();
-                    if (remoto) resolverConflitoDeSincronizacao(remoto.estado);
+                    if (leituraRemotaFalhou || !remoto) throw new Error('Não foi possível confirmar o salvamento');
+                    await resolverConflitoDeSincronizacao(remoto.estado);
                     return;
                 }
 
-                versaoRemota = Number(data.versao) || versaoRemota + 1;
+                versaoRemota = Math.max(versaoRemota, Number(data.versao) || versaoRemota + 1);
                 totalRemotoConhecido = totalLocal;
+                registrarBase(pendente.estado);
+                tentativasSincronizacao = 0;
+                if (sincronizacaoPendente && sync.equal(sincronizacaoPendente.estado, pendente.estado)) sincronizacaoPendente = null;
+                marcarPendente(!!sincronizacaoPendente);
             } catch (error) {
                 console.error('Falha ao salvar flashcards:', error.message);
-                showToast('☁️ Sem sincronização agora. A cópia deste aparelho foi preservada.', 5000);
+                sincronizacaoPendente ||= pendente;
+                marcarPendente(true);
+                tentativasSincronizacao++;
+                if (tentativasSincronizacao === 1) showToast('☁️ Salvo neste aparelho. O envio será tentado novamente quando houver conexão.', 5000, 'sincronizacao');
             } finally {
                 sincronizacaoEmAndamento = false;
-                if (sincronizacaoPendente) sincronizarAgora();
+                estadoEmEnvio = null;
+                if (eventoRemotoPendente) {
+                    const evento = eventoRemotoPendente;
+                    eventoRemotoPendente = null;
+                    await receberAtualizacaoRemota(evento);
+                }
+                if (sincronizacaoPendente && !conflitoPendente) {
+                    clearTimeout(sincronizacaoTimer);
+                    sincronizacaoTimer = setTimeout(sincronizarAgora, tentativasSincronizacao ? Math.min(30000, 1000 * 2 ** Math.min(tentativasSincronizacao, 5)) : 100);
+                }
             }
         }
 
         async function resolverConflitoDeSincronizacao(estadoRemoto) {
-            const totalNaNuvem = contarCardsDoEstado(estadoRemoto);
-            const totalNesteAparelho = flashcards.length;
-            await criarBackupLocal(estadoRemoto, 'conflito-nuvem');
-            await criarBackupLocal(criarEstadoAtual(), 'conflito-local');
-
-            if (totalNaNuvem >= totalNesteAparelho) {
-                localStorage.setItem('flashcards_estado', JSON.stringify(estadoRemoto));
-                localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalNaNuvem));
+            const local = sync.clone(criarEstadoAtual());
+            if (sync.equal(local, estadoRemoto)) {
+                conflitoPendente = false;
+                document.getElementById('conflitoSalvamento')?.remove();
+                registrarBase(estadoRemoto);
+                sincronizacaoPendente = null;
+                marcarPendente(false);
+                return;
+            }
+            const resultado = sync.merge(estadoBaseSincronizado, local, estadoRemoto, identidadeCardSincronizacao);
+            if (!resultado.conflicts.length) {
+                conflitoPendente = false;
+                document.getElementById('conflitoSalvamento')?.remove();
+                registrarBase(estadoRemoto);
+                localStorage.setItem('flashcards_estado', JSON.stringify(resultado.state));
+                localStorage.setItem(CONTAGEM_SEGURA_KEY, String(resultado.state.flashcards.length));
                 carregarEstado();
-                showToast(`☁️ Atualizado pela nuvem: ${totalNaNuvem} cards. A versão local ficou salva em Backups.`, 6000);
-            } else {
-                showToast(`⚠️ Conflito preservado: este aparelho tem ${totalNesteAparelho} cards e a nuvem ${totalNaNuvem}. Abra 🛟 Backups.`, 7000);
+                sincronizacaoPendente = null;
+                agendarSincronizacao(criarEstadoAtual());
+                return;
+            }
+            conflitoPendente = true;
+            clearTimeout(sincronizacaoTimer);
+            await criarBackupLocal(estadoRemoto, 'conflito-nuvem');
+            await criarBackupLocal(local, 'conflito-local');
+            sincronizacaoPendente ||= { estado: sync.clone(criarEstadoAtual()), reducaoPermitida: 0 };
+            conflitoPendente = true;
+            marcarPendente(true);
+            mostrarConflitoSalvamento();
+        }
+
+        function mostrarConflitoSalvamento() {
+            let aviso = document.getElementById('conflitoSalvamento');
+            if (!aviso) {
+                aviso = document.createElement('div');
+                aviso.id = 'conflitoSalvamento';
+                aviso.setAttribute('role', 'status');
+                aviso.style.cssText = 'padding:10px;margin:8px;border:1px solid #d7b252;border-radius:8px;background:#302817;color:#fff3ce;font:13px system-ui;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+                aviso.innerHTML = '<span>O mesmo card foi editado de formas diferentes. Suas alterações estão salvas neste aparelho e as duas cópias estão em Backups.</span><button type="button" data-backups>Ver cópias</button><button type="button" data-local>Usar minhas alterações na nuvem</button>';
+                document.querySelector('.header-top').after(aviso);
+                aviso.querySelector('[data-backups]').onclick = abrirCentralBackups;
+                aviso.querySelector('[data-local]').onclick = async () => {
+                    const remoto = await carregarEstadoRemoto();
+                    if (leituraRemotaFalhou) return showToast('Aguardando conexão. Sua cópia continua salva neste aparelho.');
+                    if (remoto) { await criarBackupLocal(remoto.estado, 'conflito-nuvem'); registrarBase(remoto.estado); }
+                    conflitoPendente = false;
+                    aviso.remove();
+                    sincronizacaoPendente = null;
+                    agendarSincronizacao(criarEstadoAtual(), Math.max(0, totalRemotoConhecido - flashcards.length));
+                };
             }
         }
         // ================================================================
@@ -2608,23 +2702,32 @@
 
         async function criarBackupLocal(estado, origem = 'automatico', forcarSubstituicao = false) {
             if (!estado || !Array.isArray(estado.flashcards)) return;
+            estado = sync.clone(estado);
             try {
                 const db = await abrirBancoBackups();
                 const tx = db.transaction('backups', 'readwrite');
                 const store = tx.objectStore('backups');
-                const dia = new Date().toLocaleDateString('en-CA');
+                const diaBase = `${usuarioAtual?.id || 'local'}|${new Date().toLocaleDateString('en-CA')}`;
+                const dia = /conflito|mudanca-remota-durante-edicao/.test(origem)
+                    ? `${diaBase}|${origem}|${Date.now()}-${Math.random().toString(16).slice(2)}` : diaBase;
                 const totalCards = contarCardsDoEstado(estado);
                 const existenteRequest = store.index('dia').get(dia);
                 existenteRequest.onsuccess = () => {
                     const existente = existenteRequest.result;
                     if (!forcarSubstituicao && existente && Number(existente.totalCards || 0) >= totalCards) return;
-                    store.put({ ...(existente || {}), estado, origem, dia, criadoEm: Date.now(), totalCards });
+                    store.put({ ...(existente || {}), estado, origem, dia, criadoEm: Date.now(), totalCards, userId: usuarioAtual?.id });
                 };
                 const todosRequest = store.getAllKeys();
                 todosRequest.onsuccess = () => {
                     const chaves = todosRequest.result || [];
                     chaves.slice(0, Math.max(0, chaves.length - 15)).forEach(chave => store.delete(chave));
                 };
+                await new Promise((resolve, reject) => {
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                    tx.onabort = () => reject(tx.error);
+                });
+                db.close();
             } catch (error) {
                 console.warn('Não foi possível criar backup local:', error);
             }
@@ -2632,6 +2735,7 @@
 
         async function criarBackupNuvem(estado, origem = 'manual', forcarSubstituicao = false) {
             if (!usuarioAtual || !estado || !Array.isArray(estado.flashcards)) return;
+            estado = sync.clone(estado);
             const dia = new Date().toLocaleDateString('en-CA');
             const totalCards = contarCardsDoEstado(estado);
             const { data: existente, error: erroBusca } = await supabaseClient
@@ -2677,7 +2781,8 @@
                 .eq('user_id', usuarioAtual.id)
                 .order('created_at', { ascending: false })
                 .limit(30);
-            if (error) return showToast('❌ Não foi possível carregar os backups.');
+            const locais = await obterBackupsLocais();
+            const itensLocais = locais.map(item => `<div style="padding:10px 0;border-bottom:1px solid #ffffff22"><strong>${item.totalCards} cards</strong> · ${escaparHTML(item.origem)}<br><small>${new Date(item.criadoEm).toLocaleString('pt-BR')} · neste aparelho</small><br><button type="button" onclick="event.stopPropagation();restaurarBackupLocal(${item.id})">♻️ Restaurar</button> <button type="button" onclick="event.stopPropagation();baixarBackupLocal(${item.id})">📥 Baixar cópia completa</button></div>`).join('');
 
             const itens = (data || []).map(item => {
                 const dataFormatada = new Date(item.created_at).toLocaleString('pt-BR');
@@ -2692,7 +2797,38 @@
 
             const cadastrar = '<button type="button" onclick="selecionarJSONBackup()" style="margin:0 8px 10px 0;color:#74e39a">📁 Cadastrar JSON no backup</button>';
             const acoes = cadastrar + (data?.length ? '<button type="button" onclick="excluirTodosBackupsNuvem()" style="margin-bottom:10px;color:#ff7b89">🗑️ Excluir todos os backups</button>' : '');
-            abrirModal('🛟 Backups dos flashcards', acoes + (itens || '<p>Nenhum backup anterior. O sistema cria somente uma cópia de segurança por dia.</p>'), 'Fechar', null);
+            abrirModal('🛟 Backups dos flashcards', acoes + (itensLocais ? '<h3>Cópias deste aparelho</h3>' + itensLocais : '') + '<h3>Cópias da nuvem</h3>' + (itens || (error ? '<p>A nuvem está indisponível. As cópias locais continuam acessíveis.</p>' : '<p>Nenhum backup na nuvem.</p>')), 'Fechar', null);
+        }
+
+        async function obterBackupsLocais() {
+            try {
+                const db = await abrirBancoBackups();
+                const itens = await new Promise((resolve, reject) => {
+                    const r = db.transaction('backups').objectStore('backups').getAll();
+                    r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error);
+                });
+                db.close();
+                return itens.filter(item => !item.userId || item.userId === usuarioAtual?.id).sort((a,b) => b.criadoEm-a.criadoEm);
+            } catch { return []; }
+        }
+        async function baixarBackupLocal(id) {
+            const item = (await obterBackupsLocais()).find(item => item.id === id);
+            if (!item) return;
+            const url = URL.createObjectURL(new Blob([JSON.stringify(item.estado, null, 2)], {type:'application/json'}));
+            const a = document.createElement('a'); a.href = url; a.download = `flashcards_${item.origem}_${id}.json`; a.click(); URL.revokeObjectURL(url);
+        }
+        async function restaurarBackupLocal(id) {
+            const item = (await obterBackupsLocais()).find(item => item.id === id);
+            if (!item || !confirm(`Restaurar esta cópia com ${item.totalCards} cards? A cópia atual será preservada.`)) return;
+            await criarBackupLocal(criarEstadoAtual(), 'conflito-antes-restaurar');
+            localStorage.setItem('flashcards_estado', JSON.stringify(item.estado));
+            localStorage.setItem(CONTAGEM_SEGURA_KEY, String(item.totalCards));
+            carregarEstado();
+            conflitoPendente = false;
+            document.getElementById('conflitoSalvamento')?.remove();
+            sincronizacaoPendente = null;
+            autorizarProximaReducao(Math.max(0, totalRemotoConhecido - item.totalCards));
+            salvarEstado(); fecharModal();
         }
 
         function selecionarJSONBackup() {
@@ -2815,6 +2951,9 @@
             localStorage.setItem('flashcards_estado', JSON.stringify(backup.estado));
             localStorage.setItem(CONTAGEM_SEGURA_KEY, String(backup.total_cards));
             if (!carregarEstado()) return showToast('❌ O backup não contém flashcards válidos.');
+            conflitoPendente = false;
+            document.getElementById('conflitoSalvamento')?.remove();
+            sincronizacaoPendente = null;
             salvarEstado();
             fecharModal();
             showToast(`✅ Backup restaurado: ${backup.total_cards} cards.`, 5000);
@@ -6127,6 +6266,7 @@
 
         function salvarEstado() {
             try {
+                flashcards.forEach(card => { if (!card._idSincronizacao) card._idSincronizacao = idImportacaoCaderno(card); });
                 const estado = criarEstadoAtual();
                 const totalNovo = contarCardsDoEstado(estado);
                 const totalSeguro = Number(localStorage.getItem(CONTAGEM_SEGURA_KEY)) || 0;
@@ -6309,6 +6449,41 @@
             }
         }
 
+        async function receberAtualizacaoRemota(novo) {
+            const versao = Number(novo.versao) || 0;
+            if (!novo.estado || versao <= versaoRemota) return;
+            // Realtime may deliver our own write before its HTTP acknowledgement.
+            if (estadoEmEnvio && sync.equal(novo.estado, estadoEmEnvio)) return;
+            if (sincronizacaoEmAndamento) {
+                if (!eventoRemotoPendente || versao > Number(eventoRemotoPendente.versao)) eventoRemotoPendente = novo;
+                return;
+            }
+            if (sync.equal(novo.estado, estadoBaseSincronizado)) { versaoRemota = versao; return; }
+            versaoRemota = versao;
+            totalRemotoConhecido = contarCardsDoEstado(novo.estado);
+            if (sync.equal(novo.estado, criarEstadoAtual())) {
+                conflitoPendente = false;
+                document.getElementById('conflitoSalvamento')?.remove();
+                registrarBase(novo.estado);
+                sincronizacaoPendente = null;
+                marcarPendente(false);
+                return;
+            }
+            if (sincronizacaoPendente || conflitoPendente || !sync.equal(criarEstadoAtual(), estadoBaseSincronizado)) {
+                await resolverConflitoDeSincronizacao(novo.estado);
+            } else {
+                await criarBackupLocal(criarEstadoAtual(), 'antes-atualizacao-remota');
+                if (versao !== versaoRemota) return;
+                // Edits made while the backup was writing must also be merged.
+                if (!sync.equal(criarEstadoAtual(), estadoBaseSincronizado)) return resolverConflitoDeSincronizacao(novo.estado);
+                registrarBase(novo.estado);
+                localStorage.setItem('flashcards_estado', JSON.stringify(novo.estado));
+                localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalRemotoConhecido));
+                carregarEstado();
+                marcarPendente(false);
+            }
+        }
+
         function iniciarSincronizacaoTempoReal() {
             if (!usuarioAtual) return;
             if (canalSincronizacao) supabaseClient.removeChannel(canalSincronizacao);
@@ -6320,28 +6495,7 @@
                     table: 'flashcards_estado',
                     filter: `user_id=eq.${usuarioAtual.id}`
                 }, async (payload) => {
-                    const novo = payload.new || {};
-                    if (!novo.estado || novo.device_id === deviceId) return;
-                    versaoRemota = Number(novo.versao) || versaoRemota;
-                    const totalNaNuvem = contarCardsDoEstado(novo.estado);
-                    totalRemotoConhecido = totalNaNuvem;
-
-                    if (sincronizacaoPendente || sincronizacaoEmAndamento) {
-                        await criarBackupLocal(novo.estado, 'mudanca-remota-durante-edicao');
-                        showToast('⚠️ Outro aparelho alterou os cards. As duas versões foram preservadas em 🛟 Backups.', 7000);
-                        return;
-                    }
-
-                    if (totalNaNuvem >= flashcards.length) {
-                        await criarBackupLocal(criarEstadoAtual(), 'antes-atualizacao-remota');
-                        localStorage.setItem('flashcards_estado', JSON.stringify(novo.estado));
-                        localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalNaNuvem));
-                        carregarEstado();
-                        showToast(`☁️ Sincronizado com outro aparelho: ${totalNaNuvem} cards.`, 5000, 'sincronizacao');
-                    } else {
-                        await criarBackupLocal(novo.estado, 'nuvem-menor-preservada');
-                        showToast(`🛑 A nuvem enviou uma versão menor (${totalNaNuvem}). Este aparelho manteve ${flashcards.length} cards.`, 7000);
-                    }
+                    await receberAtualizacaoRemota(payload.new || {});
                 })
                 .subscribe();
         }
@@ -6356,28 +6510,29 @@
             const totalLocal = contarCardsDoEstado(estadoLocal);
             const totalNaNuvem = contarCardsDoEstado(estadoRemoto);
 
-            if (estadoLocal && estadoRemoto) {
-                if (totalLocal > totalNaNuvem) {
-                    await criarBackupLocal(estadoRemoto, 'nuvem-menor-na-inicializacao');
-                    await criarBackupNuvem(estadoRemoto, 'antes-recuperar-copia-local');
-                    localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalLocal));
-                    showToast(`🛟 Cópia maior encontrada neste aparelho: ${totalLocal} cards. Ela será preservada.`, 8000);
-                } else {
-                    if (totalLocal !== totalNaNuvem) await criarBackupLocal(estadoLocal, 'local-antes-carregar-nuvem');
-                    localStorage.setItem('flashcards_estado', JSON.stringify(estadoRemoto));
-                    localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalNaNuvem));
-                }
+            let syncMeta = {};
+            try { syncMeta = JSON.parse(localStorage.getItem(chaveSync()) || '{}'); } catch {}
+            try { estadoBaseSincronizado = await sync.load(usuarioAtual.id) || null; } catch {}
+            let conflitoInicial = false;
+            if (estadoLocal && estadoRemoto && (syncMeta.pendente || totalLocal > totalNaNuvem)) {
+                const resultado = sync.merge(estadoBaseSincronizado, estadoLocal, estadoRemoto, identidadeCardSincronizacao);
+                conflitoInicial = resultado.conflicts.length > 0;
+                if (!conflitoInicial) localStorage.setItem('flashcards_estado', JSON.stringify(resultado.state));
+                localStorage.setItem(CONTAGEM_SEGURA_KEY, String(conflitoInicial ? totalLocal : resultado.state.flashcards.length));
             } else if (estadoRemoto) {
+                if (estadoLocal && !sync.equal(estadoLocal, estadoRemoto)) await criarBackupLocal(estadoLocal, 'local-antes-carregar-nuvem');
                 localStorage.setItem('flashcards_estado', JSON.stringify(estadoRemoto));
                 localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalNaNuvem));
             } else if (estadoLocal) {
                 localStorage.setItem(CONTAGEM_SEGURA_KEY, String(totalLocal));
             }
+            if (estadoRemoto && !conflitoInicial) registrarBase(estadoRemoto);
 
             if (!carregarEstado()) inicializarSistema(dadosPadrao);
             const totalNomesCorrigidos = corrigirPastasImportadas();
             adicionarBancoInicialPMPI();
             if (totalNomesCorrigidos) renderizarArvore();
+            if (conflitoInicial) await resolverConflitoDeSincronizacao(estadoRemoto);
             salvarEstado();
             iniciarSincronizacaoTempoReal();
             abrirCardRecebidoDoCaderno();
@@ -6422,9 +6577,10 @@
         }, 5000);
 
         // Salva também ao fechar ou atualizar a página.
+        window.addEventListener('online', () => { tentativasSincronizacao = 0; salvarEstado(); sincronizarAgora(); });
         window.addEventListener('beforeunload', salvarEstado);
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') salvarEstado();
+            if (document.visibilityState === 'hidden') { salvarEstado(); sincronizarAgora(); }
         });
     </script>
 
@@ -6438,7 +6594,7 @@
     <button type="button" id="cadernoIntegradoRepetir" hidden>Tentar novamente</button>
     <iframe id="cadernoIntegradoFrame" title="Caderno completo: anotações, pastas e revisões" hidden></iframe>
 </dialog>
-<script src="caderno-integrado.js?v=16"></script>
+<script src="caderno-integrado.js?v=17"></script>
 <script src="novos-cards.js?v=1"></script>
 <link rel="stylesheet" href="melhorias-estudo.css?v=3"><script src="melhorias-estudo.js?v=4"></script><script src="detalhes-estudo.js?v=1"></script><script src="menu-flashcard.js?v=1"></script>
 <script src="calendario-flashcard.js?v=1"></script><script src="calendario-revisoes.js?v=3"></script>

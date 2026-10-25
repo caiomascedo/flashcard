@@ -81,6 +81,11 @@ A cola aceita um cabeçalho `Q4221348 Português > Interpretação de Textos`, s
 da pergunta e da resposta separadas por uma linha em branco. Reutiliza pastas e a
 página local de hoje. O usuário confere o rascunho e decide se o novo card também
 será enviado ao Flashcard. O histórico organiza registros em Hoje, Ontem e datas.
+Em cada data com novos registros, **Responder todos os cadastrados no dia**
+reúne os cards daquela data em todas as matérias, incluindo os que ainda não
+estão vencidos. Cards antigos respondidos naquele dia continuam no histórico,
+mas não entram nessa seleção de novos cadastros. A preferência entre responder
+no Flashcard ou no caderno é respeitada.
 
 **Limpar marcações da seleção** pede confirmação e preserva os demais filtros.
 

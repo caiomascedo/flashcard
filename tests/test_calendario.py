@@ -5,6 +5,40 @@ from test_menu_paineis import NOTEBOOK
 from test_caderno_integrado import MOCK,server
 
 @pytest.mark.parametrize('engine',['chromium','webkit'])
+def test_history_answer_all_created_on_day(server,engine):
+ with sync_playwright() as p:
+  browser=getattr(p,engine).launch();page=browser.new_page(timezone_id='America/Fortaleza',viewport={'width':390,'height':844})
+  page.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@*/dist/umd/supabase.min.js',lambda r:r.fulfill(body=MOCK,content_type='application/javascript'))
+  page.route('https://i.postimg.cc/**',lambda r:r.abort())
+  page.add_init_script('window.__notebook='+json.dumps(NOTEBOOK)+''';
+   const cards=__notebook.dados.flashcards;
+   cards[0].criadoEm=new Date().toISOString();cards[1].criadoEm=new Date().toISOString();
+   cards[1].proxima_revisao='2099-01-01T00:00:00Z';
+   const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+   cards.push({...cards[0],id:103,pergunta:'Cadastrado ontem, respondido hoje',criadoEm:yesterday.toISOString(),ultima_revisao:new Date().toISOString()});
+   cards.push({...cards[0],id:104,pergunta:'Card antigo',criadoEm:'2026-09-02T12:00:00Z'});
+  ''')
+  page.goto(server);page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
+  frame=page.frame_locator('#cadernoIntegradoFrame')
+  frame.locator('#abrirPainelCaderno').click()
+  frame.locator('#historicoCaderno').evaluate('el=>el.open=true')
+  frame.locator('#historicoHoje').evaluate('el=>el.open=true')
+  today=frame.locator('#historicoHoje [data-responder-dia]')
+  expect(today).to_have_text('▶ Responder todos os cadastrados no dia (2)')
+  today.click()
+  page.wait_for_function('!document.getElementById("cadernoIntegradoDialog").open')
+  assert page.evaluate('indicesFiltrados.map(i=>String(flashcards[i].cadernoId)).sort()')==['101','102']
+  page.get_by_role('button',name='📓 Caderno completo',exact=True).click()
+  frame.locator('#abrirPainelCaderno').click()
+  frame.locator('#historicoCaderno').evaluate('el=>el.open=true')
+  frame.locator('#historicoOntem').evaluate('el=>el.open=true')
+  frame.locator('#historicoOntem [data-responder-dia]').click()
+  page.wait_for_function('!document.getElementById("cadernoIntegradoDialog").open')
+  assert page.evaluate('indicesFiltrados.map(i=>String(flashcards[i].cadernoId))')==['103']
+  assert frame.locator('#historicoDia-2026-09-02 [data-responder-dia]').count()==1
+  browser.close()
+
+@pytest.mark.parametrize('engine',['chromium','webkit'])
 def test_calendar_and_paste(server,engine):
  with sync_playwright() as p:
   browser=getattr(p,engine).launch();page=browser.new_page(timezone_id="America/Fortaleza",viewport={"width":390,"height":844});page.set_default_timeout(8000)

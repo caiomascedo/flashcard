@@ -1424,8 +1424,14 @@ function registrarAlteracaoLocal() {
         const lista=document.getElementById('historicoCadernoLista');if(!lista)return;
         lista.replaceChildren();
         const dataLocal=v=>{const d=new Date(v);return Number.isNaN(+d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-        for(const [offset,nome]of [[0,'Hoje'],[-1,'Ontem']]){
-            const dia=new Date();dia.setDate(dia.getDate()+offset);const chave=dataLocal(dia),pasta=document.createElement('details'),titulo=document.createElement('summary');pasta.id=offset===0?'historicoHoje':'historicoOntem';pasta.append(titulo);const grupos=new Map();let quantidade=0;
+        const hojeHistorico=dataLocal(new Date()),ontemData=new Date();ontemData.setDate(ontemData.getDate()-1);const ontemHistorico=dataLocal(ontemData);
+        const criadoNoDia=card=>{const criado=card.criadoEm||(Number(card.id)>1e12?Number(card.id):null);return criado?dataLocal(criado):'';};
+        const diasHistorico=[...new Set([hojeHistorico,ontemHistorico,...dados.flashcards.map(criadoNoDia).filter(Boolean)])].sort().reverse();
+        for(const chave of diasHistorico){
+            const nome=chave===hojeHistorico?'Hoje':chave===ontemHistorico?'Ontem':new Date(chave+'T12:00:00').toLocaleDateString('pt-BR');
+            const pasta=document.createElement('details'),titulo=document.createElement('summary');pasta.id=chave===hojeHistorico?'historicoHoje':chave===ontemHistorico?'historicoOntem':'historicoDia-'+chave;pasta.append(titulo);const grupos=new Map();let quantidade=0;
+            const cadastrados=dados.flashcards.filter(card=>criadoNoDia(card)===chave);
+            if(cadastrados.length){const responderDia=document.createElement('button');responderDia.type='button';responderDia.dataset.responderDia=chave;responderDia.textContent='▶ Responder todos os cadastrados no dia ('+cadastrados.length+')';responderDia.style.cssText='display:block;width:100%;margin:8px 0;padding:10px;border:1px solid #168c69;border-radius:8px;background:#e8fff4;color:#155d46;font-weight:600';responderDia.onclick=()=>window.CalendarioFonte.open({cards:cadastrados,title:'Cadastrados em '+nome});pasta.append(responderDia);}
             const adicionar=(c,m,a,texto,task)=>{const grupo=[c.nome,m.nome,a.nome].join(' › ');if(!grupos.has(grupo)){const d=document.createElement('details'),sum=document.createElement('summary');sum.textContent=grupo;d.append(sum);pasta.append(d);grupos.set(grupo,d);}const button=document.createElement('button');button.type='button';button.textContent=texto;button.onclick=()=>window.CalendarioFonte.open(task);grupos.get(grupo).append(button);quantidade++;};
             for(const c of dados.concursos)for(const m of c.materias||[])for(const a of m.assuntos||[]){
                 for(const pg of a.paginas||[]){const revisado=!!dados.calendarioMarcacoes?.[chave+'|pagina:'+c.id+':'+m.id+':'+a.id+':'+pg.id];const atualizado=!!dados.cadernosTrabalhadosDia?.[chave+'|'+c.id+':'+m.id+':'+a.id+':'+pg.id];if(dataLocal(pg.data)===chave||revisado||atualizado)adicionar(c,m,a,(revisado?'✓ Revisado · ':atualizado?'✏️ Atualizado · ':'📓 Caderno · ')+pg.titulo,{c,m,a,pg});}
