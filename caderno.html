@@ -650,7 +650,7 @@ function registrarAlteracaoLocal() {
     function abrirModal(id)  { document.getElementById(id).classList.add('ativo'); }
     function fecharModal(id) { document.getElementById(id).classList.remove('ativo'); }
 
-    function registrarDiaDeRevisao(card,data=new Date()){const d=new Date(data);const dia=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;dados.revisoesCalendario ||= {};dados.revisoesCalendario[dia+'|'+card.id]=true;}
+    function registrarDiaDeRevisao(card,data=new Date()){const d=new Date(data);const dia=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;dados.revisoesCalendario ||= {};const anterior=new Date(card.ultima_revisao);if(!Number.isNaN(+anterior)){const chave=`${anterior.getFullYear()}-${String(anterior.getMonth()+1).padStart(2,'0')}-${String(anterior.getDate()).padStart(2,'0')}`;dados.revisoesCalendario[chave+'|'+card.id]=true;}dados.revisoesCalendario[dia+'|'+card.id]=true;}
     window.CadernoIntegrado = {
         registrarRevisao: (id,data,proxima)=>{const card=dados.flashcards.find(c=>String(c.id)===String(id));if(card){registrarDiaDeRevisao(card,data);card.ultima_revisao=data;card.proxima_revisao=proxima;salvarTudo();}},
         cards: () => dados.flashcards.filter(card=>card.enviarFlashcard!==false).map(card => {

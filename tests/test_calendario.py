@@ -11,7 +11,7 @@ def test_calendar_and_paste(server,engine):
   errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.route('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@*/dist/umd/supabase.min.js',lambda r:r.fulfill(body=MOCK,content_type='application/javascript'))
   page.route('https://i.postimg.cc/**',lambda r:r.abort())
-  page.add_init_script('window.__notebook='+json.dumps(NOTEBOOK));page.goto(server)
+  page.add_init_script('window.__notebook='+json.dumps(NOTEBOOK)+";const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);window.__notebook.dados.flashcards[0].ultima_revisao=yesterday.toISOString();");page.goto(server)
   page.get_by_role('button',name='📅 Calendário',exact=True).click()
   expect(page.locator('#calendarioRevisoes')).to_be_visible()
   expect(page.locator('[data-tasks]')).to_contain_text('Responder cards')
@@ -59,6 +59,7 @@ def test_calendar_and_paste(server,engine):
   page.evaluate("const i=flashcards.findIndex(c=>c.cadernoId==='101');filtroAtivo={tipo:'lista',nome:'Teste'};indicesFiltrados=[i];indiceAtual=i;modoRevisao=false;modoFilaErros=false;atualizarCard()")
   page.get_by_role('button',name='✅ Acertou',exact=True).click()
   assert page.evaluate("JSON.parse(localStorage.dados_concursos).flashcards.find(c=>c.id===101).ultima_revisao")
+  assert page.evaluate("Object.keys(JSON.parse(localStorage.dados_concursos).revisoesCalendario).filter(k=>k.endsWith('|101')).length")>=2
   assert page.evaluate("Object.keys(JSON.parse(localStorage.flashcards_estado).revisoesCalendario).length")>=1
   page.once('dialog',lambda d:d.accept());page.evaluate('limparMarcacoesSelecao()')
   assert page.evaluate('statusCard[indicesFiltrados[0]]')=='nao'
